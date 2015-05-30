@@ -1,6 +1,6 @@
 name: bwu_dart_archive_downloader
-author: Guenter Zoechbauer <guenter@gzoechbauer.com>
-version: 0.1.0
+author: Günter Zöchbauer <guenter@gzoechbauer.com>
+version: 0.1.0+1
 description: Typed API for the site where Dart artifacts like SDK, Dartium, ContentShell, ChromeDriver and API docs can be downloaded.
 homepage: https://github.com/bwu-dart/bwu_dart_archive_downloader
 environment:
