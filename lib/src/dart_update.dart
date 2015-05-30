@@ -100,8 +100,8 @@ class DartUpdate {
   Future<VersionInfo> downloadLatestVersionInfo() async {
     final downloader = new DartArchiveDownloader(_options.downloadDirectory);
 
-    io.File newVersionFile = await downloader.downloadFile(
-        _options.channel.getUri(DownloadArtifact.version, VersionFile.version));
+    io.File newVersionFile = await downloader
+        .downloadFile(_options.channel.getUri(VersionFile.version));
     newVersionFile = newVersionFile.renameSync(versionFile('new').path);
     return new VersionInfo.fromJson(
         JSON.decode(newVersionFile.readAsStringSync()));
@@ -112,7 +112,7 @@ class DartUpdate {
       VersionInfo version, DownloadArtifact artifact, DownloadFile file) {
     final downloader = new DartArchiveDownloader(_options.downloadDirectory);
 
-    return downloader.downloadFile(_options.channel.getUri(artifact, file,
+    return downloader.downloadFile(_options.channel.getUri(file,
         version: version != null && version.revision != null
             ? version.revision.toString()
             : null));

@@ -12,8 +12,7 @@ main() async {
       Platform.getFromSystemPlatform(prefer64bit: true));
 
   // build the uri for the download file.
-  final uri =
-      DownloadChannel.stableRelease.getUri(file);
+  final uri = DownloadChannel.stableRelease.getUri(file);
 
   // start the download
   await downloader.downloadFile(uri);
