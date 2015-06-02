@@ -9,25 +9,45 @@ import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
 export 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
 //export 'package:bwu_utils_dev/grinder.dart';
 
+// TODO(zoechi) investigate this API
+// https://www.googleapis.com/storage/v1/b/dart-archive/o?prefix=channels/stable/release/&delimiter=/
+// used by the dartlang.org download page
+
 /// Supported options for the SDK download.
 class SdkDownloadOptions {
+
   /// The directory to store the downloaded file in.
   io.Directory downloadDirectory;
+
   // String currentVersionFileNameSuffix = 'VERSION_current';
   /// The directory where to extract the downloaded SDK zip archive.
   /// The content of the archive is put directly in this directory omitting the
   /// top-level directory of the archive.
   io.Directory installDirectory;
+
   /// The directory where the currently installed SDK is moved before the new
   /// one is extracted.
   io.Directory backupDirectory;
+
   /// The operating system and processor architecture to choose for the
   /// download. If this is null, it is derived from the current system.
   Platform targetPlatform;
+
   /// Prefer 64 bit download.
   bool use64bitIfAvailable = true;
+
   /// Choose a download channel for the download.
   DownloadChannel channel = DownloadChannel.stableRelease;
+
+// TODO(zoechi) not (yet?) supported
+//  /// The release version of the download.
+//  /// If [version] and [versionDirectory] are `null`, `latest` is used as
+//  /// [versionDirectory]
+//  Version version;
+//
+//  /// The directory the download is served in. If [version] is provided
+//  /// [DartUpdate] tries to discover the [versionDirectory] itself.
+//  String versionDirectory;
 }
 
 /// Download the SDK, backup the existing installation directory, extract the

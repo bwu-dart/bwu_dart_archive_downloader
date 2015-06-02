@@ -2,10 +2,14 @@ library bwu_dart_archive_downloader.src.dart_archive_downloader;
 
 import 'dart:async' show Future, Stream;
 import 'dart:io' as io;
+import 'dart:convert' show JSON;
 import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
+import 'package:pub_semver/pub_semver.dart';
 
 const baseUri = 'http://gsdview.appspot.com/dart-archive/channels/';
+const apiAuthority = 'www.googleapis.com';
+const apiPath = '/storage/v1/b/dart-archive/o';
 
 /// Contains the information gathered from the `VERSION` file in the download
 /// directory.
@@ -28,6 +32,10 @@ class VersionInfo {
 //    final hour = int.parse(d.substring(8, 10)); // removed at 2015-05-30
 //    final minute = int.parse(d.substring(10, 12));
     date = new DateTime(year, month, day /*, hour, minute*/);
+  }
+
+  Version get semanticVersion {
+    return new Version.parse(version);
   }
 
   bool operator >(other) {
@@ -121,7 +129,124 @@ class DartArchiveDownloader {
   Future<String> downloadContent(Uri uri) async {
     return (await http.get(uri)).body;
   }
+
+  Map<DownloadChannel, List<String>> _versions = {};
+
+  // This uses the Drive api https://developers.google.com/drive/v2/reference/files/list
+  // See also https://github.com/dart-lang/www.dartlang.org/blob/master/src/site/googleapis/index.markdown
+  /// Load all available versions for the specified [channel].
+  /// The returned list is sorted descending with `latest` as first entry.
+  /// The value isn't necessarily a semantic version, but might also be a build
+  /// number. It seems for newer releases this is actually the semantic version
+  /// but as of the time of this writing there was only one entry with a
+  /// semantic version all others were build numbers or other artifical numbers
+  /// but ascending with newer releases.
+  /// Semantic versions are ordered on top of other values when ordered
+  /// descending.
+  /// Fetching all versions takes some for the bleeding edge channel because
+  /// there are about 15000 builds (without any proper ordering), which needs 18
+  /// requests (increasing) and the response is very slow.
+  Future<List<String>> getVersions(DownloadChannel channel) async {
+    if (_versions.containsKey(channel)) {
+      return _versions[channel];
+    }
+    String token;
+    bool hasMorePages = true;
+    Map query = {'prefix': 'channels/${channel.value}', 'delimiter': '/'};
+    List<String> versions = <String>[];
+    print('Fetch versions from ${channel.value}.');
+    int currentPage = 1;
+
+    while (hasMorePages) {
+      if (token != null) {
+        query['pageToken'] = token;
+      } else {
+        query.remove('pageToken');
+      }
+      Uri uri = new Uri.https(apiAuthority, apiPath, query);
+      print('  page: ${currentPage++}');
+      final response = JSON.decode((await http.get(uri)).body);
+      token = response['nextPageToken'];
+      if (token == null || token.isEmpty) {
+        hasMorePages = false;
+      }
+      versions
+          .addAll(response['prefixes']
+              .map((e) =>
+                  e.split('/').where((e) => e != null && e.isNotEmpty).last)
+              .where(_isNotWeirdOrInvalidVersion));
+//      print('${token}, ${response['prefixes'].first}');
+    }
+
+    versions.sort((k, v) => _descendingVersionComparer(k, v) * -1);
+    versions.insert(0, 'latest');
+    _versions[channel] = versions;
+    return versions;
+  }
+
+  bool _isNotWeirdOrInvalidVersion(String version) {
+    return version.isNotEmpty &&
+        !weirdBuildNumberRegExp.hasMatch(
+            version) /* ignore a few versions where Dartium was stored in another folder with suffix '.0' */ &&
+        !['raw', 'be', '42', 'channels', 'latest',].contains(version.trim());
+  }
+
+  Future<String> findVersion(
+      DownloadChannel channel, Version semanticVersion) async {
+    final versions = await getVersions(channel);
+    print('${versions.length - 2} versions found');
+    return _findVersion(
+        channel, semanticVersion, versions, 1, versions.length - 1);
+  }
+
+  Future<String> _findVersion(DownloadChannel channel, Version semanticVersion,
+      List<String> versions, int start, int end) async {
+    if (start == end) {
+      final VersionInfo versionInfo =
+          await _getVersionInfo(channel, versions[start]);
+      print('check pos ${start}: ${versionInfo.semanticVersion}');
+      return versions[start];
+    }
+    final mid = start + ((end - start) ~/ 2);
+    final VersionInfo versionInfo =
+        await _getVersionInfo(channel, versions[mid]);
+    // print('start: ${start} - end: ${end} - mid: ${mid} - version: ${versionInfo.semanticVersion}');
+    print('check pos ${mid}: ${versionInfo.semanticVersion}');
+
+    if (semanticVersion == versionInfo.semanticVersion) {
+      return versions[mid];
+    } else if (semanticVersion < versionInfo.semanticVersion) {
+      return _findVersion(channel, semanticVersion, versions, mid + 1, end);
+    } else {
+      return _findVersion(channel, semanticVersion, versions, start, mid - 1);
+    }
+  }
+
+  Future<VersionInfo> _getVersionInfo(
+      DownloadChannel channel, String version) async {
+    final content = await downloadContent(
+        channel.getUri(VersionFile.version, version: version));
+    return new VersionInfo.fromJson(JSON.decode(content));
+  }
 }
+
+int _descendingVersionComparer(String x, String y) {
+  bool xIsSemVer = semVerRegExp.hasMatch(x);
+  bool yIsSemVer = semVerRegExp.hasMatch(y);
+  // sort semantic version values higher than build numbers
+  // because newer builds are provided with semantic versions
+  if (xIsSemVer && yIsSemVer) {
+    return new Version.parse(x).compareTo(new Version.parse(y));
+  } else if (xIsSemVer) {
+    return -1;
+  } else if (yIsSemVer) {
+    return 1;
+  }
+  return x.padLeft(8).compareTo(y.padLeft(8));
+}
+
+final semVerRegExp = new RegExp(r'^[0-9]+\.[0-9]+\.[0-9]+{?:[+-].*$');
+final weirdBuildNumberRegExp = new RegExp(r'^[0-9]+\.0$');
 
 /// Build the Uri for a download file based on [DownloadChannel],
 /// [DownloadFile], and version info.
@@ -134,14 +259,15 @@ class DownloadChannel {
   static const devSigned = const DownloadChannel('dev/signed/');
   static const beRaw = const DownloadChannel('be/raw/');
 
-  final String _value;
+  final String value;
 
   /// Builds an Uri for an [DownloadArtifact]
   Uri getUri(DownloadFile file, {String version: 'latest'}) {
+    if (version == null) version = 'latest';
     return Uri.parse(
-        '${baseUri}${_value}${version != null ? version : 'latest' }/${file.artifact.value}${file.value}');
+        '${baseUri}${value}${version != null ? version : 'latest' }/${file.artifact.value}${file.value}');
   }
-  const DownloadChannel(this._value);
+  const DownloadChannel(this.value);
 }
 
 /// A list of artifacts to download.
