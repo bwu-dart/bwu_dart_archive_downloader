@@ -28,11 +28,11 @@ packages:
   bwu_utils:
     description: bwu_utils
     source: hosted
-    version: "0.1.0-dev.2"
+    version: "0.1.0-dev.3"
   bwu_utils_dev:
     description: bwu_utils_dev
     source: hosted
-    version: "0.1.0-dev.2"
+    version: "0.1.0-dev.6"
   cli_util:
     description: cli_util
     source: hosted
@@ -196,7 +196,7 @@ packages:
   test:
     description: test
     source: hosted
-    version: "0.12.2"
+    version: "0.12.3"
   unscripted:
     description: unscripted
     source: hosted
@@ -216,7 +216,7 @@ packages:
   webdriver:
     description: webdriver
     source: hosted
-    version: "0.10.0-pre.8"
+    version: "0.10.0-pre.9"
   webkit_inspection_protocol:
     description: webkit_inspection_protocol
     source: hosted

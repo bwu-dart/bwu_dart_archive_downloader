@@ -166,34 +166,34 @@ class DartUpdate {
       f.rename(path.join(backupDirectory.path, path.basename(f.path)));
     });
   }
+}
 
-  /// Get the root directory of the Zip archive file [archive].
-  String getZipRootDirectory(io.File archive) {
-    List<int> bytes = archive.readAsBytesSync();
-    final files = new ZipDecoder().decodeBytes(bytes);
-    return files.first.name;
-  }
+/// Get the root directory of the Zip [archive] files content.
+String getZipRootDirectory(io.File archive) {
+  List<int> bytes = archive.readAsBytesSync();
+  final files = new ZipDecoder().decodeBytes(bytes);
+  return files.first.name;
+}
 
-  /// Extract the [archive] to [installDirectory] (omitting the top-level
-  /// directory of the Zip archive)
-  Future installArchive(io.File archive, io.Directory installDirectory,
-      {String replaceRootDirectoryName}) async {
-    print(
-        'Extract "${archive.absolute.path}" to "${installDirectory.absolute.path}".');
-    final io.Process process = await io.Process.start('unzip', [
-      archive.absolute.path,
-      '*/*',
-      '-d',
-      installDirectory.absolute.path
-    ]);
-    io.stdout.addStream(process.stdout);
-    io.stderr.addStream(process.stderr);
-    await process.exitCode;
-    if (replaceRootDirectoryName != null) {
-      new io.Directory(
-              path.join(installDirectory.path, getZipRootDirectory(archive)))
-          .rename(path.join(installDirectory.path, replaceRootDirectoryName));
-    }
+/// Extract the [archive] to [installDirectory] (omitting the top-level
+/// directory of the Zip archive)
+Future installArchive(io.File archive, io.Directory installDirectory,
+    {String replaceRootDirectoryName}) async {
+  print(
+      'Extract "${archive.absolute.path}" to "${installDirectory.absolute.path}".');
+  final io.Process process = await io.Process.start('unzip', [
+    archive.absolute.path,
+    '*/*',
+    '-d',
+    installDirectory.absolute.path
+  ]);
+  io.stdout.addStream(process.stdout);
+  io.stderr.addStream(process.stderr);
+  await process.exitCode;
+  if (replaceRootDirectoryName != null) {
+    new io.Directory(
+            path.join(installDirectory.path, getZipRootDirectory(archive)))
+        .rename(path.join(installDirectory.path, replaceRootDirectoryName));
   }
 
 // TODO(zoechi) this didn't work well (hung on big files), try to find a fix
