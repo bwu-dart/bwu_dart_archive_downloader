@@ -1,3 +1,9 @@
+## 0.3.0+1
+- fix a bug with default version
+
+## 0.3.0
+- added a command line tool (`darc`) to download files
+
 ## 0.2.0+1
 - enable travis
 - add badges to README.md

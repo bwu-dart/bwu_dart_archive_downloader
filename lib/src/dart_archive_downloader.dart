@@ -260,8 +260,20 @@ class DownloadChannel {
   static const beRaw = const DownloadChannel('be/raw/');
 
   final String value;
+  static const values = const [
+    stableRaw,
+    stableRelease,
+    stableSigned,
+    devRaw,
+    devRelease,
+    devSigned,
+    beRaw
+  ];
 
-  /// Builds an Uri for an [DownloadArtifact]
+  /// Builds an Uri for an [DownloadArtifact].
+  /// [version] is the directory name containing the download file. If you want
+  /// to use a Dart release version, use [findVersion] the get the directory
+  /// form the Dart release version.
   Uri getUri(DownloadFile file, {String version: 'latest'}) {
     if (version == null) version = 'latest';
     return Uri.parse(
@@ -272,17 +284,30 @@ class DownloadChannel {
 
 /// A list of artifacts to download.
 class DownloadArtifact {
-  static const apiDocs = const DownloadArtifact('api-docs/');
-  static const dartium = const DownloadArtifact('dartium/');
-  static const dartiumAndroid = const DownloadArtifact('dartium_android/');
-  static const eclipseUpdate = const DownloadArtifact('editor-eclipse-update/');
+  static const apiDocs = const DownloadArtifact('api-docs/', ApiDocsFile);
+  static const dartium = const DownloadArtifact('dartium/', DartiumFile);
+  static const dartiumAndroid =
+      const DownloadArtifact('dartium_android/', DartiumAndroidFile);
+  static const eclipseUpdate =
+      const DownloadArtifact('editor-eclipse-update/', EditorEclipseUpdateFile);
   @deprecated
-  static const editor = const DownloadArtifact('editor/');
-  static const sdk = const DownloadArtifact('sdk/');
-  static const version = const DownloadArtifact('');
+  static const editor = const DownloadArtifact('editor/', EditorFile);
+  static const sdk = const DownloadArtifact('sdk/', SdkFile);
+  static const version = const DownloadArtifact('', VersionFile);
+
+  static const values = const [
+    apiDocs,
+    dartium,
+    dartiumAndroid,
+    eclipseUpdate,
+    editor,
+    sdk,
+    version
+  ];
 
   final String value;
-  const DownloadArtifact(this.value);
+  final Type downloadFile;
+  const DownloadArtifact(this.value, this.downloadFile);
 }
 
 /// Base class for helper classes for specific download files.
@@ -337,6 +362,20 @@ class DartiumFile extends DownloadFile {
       new DartiumFile(buildFilename('dartium', platform,
           debug: debug, fileAddition: fileAddition));
 
+  static final values = {
+    'chromedriver': (Platform platform, {bool debug: false,
+            FileAddition fileAddition: FileAddition.none}) =>
+        new DartiumFile.chromedriverZip(platform,
+            debug: debug, fileAddition: fileAddition),
+    'content_shell': (Platform platform, {bool debug: false,
+            FileAddition fileAddition: FileAddition.none}) =>
+        new DartiumFile.contentShellZip(platform,
+            debug: debug, fileAddition: fileAddition),
+    'dartium': (Platform platform, {bool debug: false,
+            FileAddition fileAddition: FileAddition.none}) =>
+        new DartiumFile.dartiumZip(platform,
+            debug: debug, fileAddition: fileAddition)
+  };
   @override
   DownloadArtifact get artifact => DownloadArtifact.dartium;
 
@@ -352,6 +391,28 @@ class DartiumAndroidFile extends DownloadFile {
   DownloadArtifact get artifact => DownloadArtifact.dartiumAndroid;
 
   const DartiumAndroidFile(String value) : super(value);
+}
+
+/// To build a file name for downloading Eclipse plugin updates.
+// TODO(zoechi) not yet supported
+class EditorEclipseUpdateFile extends DownloadFile {
+  static const contentShell = const EditorEclipseUpdateFile('');
+
+  @override
+  DownloadArtifact get artifact => DownloadArtifact.eclipseUpdate;
+
+  const EditorEclipseUpdateFile(String value) : super(value);
+}
+
+/// To build a file name for downloading Eclipse plugin updates.
+// TODO(zoechi) not yet supported
+class EditorFile extends DownloadFile {
+  static const contentShell = const EditorFile('');
+
+  @override
+  DownloadArtifact get artifact => DownloadArtifact.editor;
+
+  const EditorFile(String value) : super(value);
 }
 
 /// To build a file name for downloading the Dart SDK.
@@ -394,6 +455,8 @@ class Platform {
   static const macosIa32 = const Platform('macos-ia32');
   static const windowsIa32 = const Platform('windows-ia32');
 
+  static const values = const [];
+
   final String value;
   const Platform(this.value);
 }
@@ -403,6 +466,8 @@ class FileAddition {
   static const none = const FileAddition('');
   static const md5sum = const FileAddition('.md5sum');
   static const sha256sum = const FileAddition('.sha256sum');
+
+  static const values = const [none, md5sum, sha256sum];
 
   final String value;
   const FileAddition(this.value);
