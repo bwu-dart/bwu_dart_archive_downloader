@@ -6,7 +6,24 @@ import 'package:unscripted/unscripted.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:bwu_dart_archive_downloader/dart_update.dart';
 
-main([List<String> arguments]) =>
+import 'package:logging/logging.dart' show Logger, Level;
+import 'package:quiver_log/log.dart' show BASIC_LOG_FORMATTER, PrintAppender;
+import 'package:stack_trace/stack_trace.dart' show Chain;
+
+final _log = new Logger('bwu_dart_archive_downloader.src.cli');
+
+void main(List<String> args) {
+  Logger.root.level = Level.INFO;
+  var appender = new PrintAppender(BASIC_LOG_FORMATTER);
+  appender.attachLogger(Logger.root);
+
+  Chain.capture(() => _main(args), onError: (error, stack) {
+    _log.shout(error);
+    _log.shout(stack.terse);
+  });
+}
+
+_main([List<String> arguments]) =>
     new Script(DownloadCommandModel).execute(arguments);
 
 class DDownScriptModel extends Object with DownloadCommandModel {
@@ -109,7 +126,14 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
 Extracts the ZIP archive top-level directory into the the "extractAs" directory.''',
           abbr: 't',
           defaultsTo: '.') //
-      String extractTo}) async {
+      String extractTo, //
+      @Flag(help: '''
+Verbose logging output.''', defaultsTo: false, negatable: true) //
+      bool verbose}) async {
+    if (verbose) {
+      Logger.root.level = Level.FINEST;
+    }
+
     final downloader = new DartArchiveDownloader(outputDirectory == '.'
         ? io.Directory.current
         : new io.Directory(outputDirectory));
@@ -119,7 +143,7 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
     if (channels.isEmpty) {
       throw 'Channel "${channel}" isn\'t supported or recognized.';
     } else {
-      print('Using channel "${channels.first.value}".');
+      _log.fine('Using channel "${channels.first.value}".');
     }
 
     String versionDirectory;
@@ -141,7 +165,7 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
     if (artifacts.isEmpty) {
       throw 'Artifact "${artifact}" isn\'t supported or recognized.';
     } else {
-      print('Using artifact "${artifacts.first.value}".');
+      _log.fine('Using artifact "${artifacts.first.value}".');
     }
 
     final Iterable<FileAddition> fileAdditions =
@@ -149,7 +173,7 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
     if (fileAdditions.isEmpty) {
       throw 'FileAddition "${fileAddition}" isn\'t supported or recognized.';
     } else {
-      print('Using file addition "${fileAdditions.first.value}".');
+      _log.fine('Using file addition "${fileAdditions.first.value}".');
     }
 
     Iterable<Platform> platforms;
@@ -160,7 +184,7 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
       if (platforms.isEmpty) {
         throw 'Platform "${platform}" isn\'t supported or recognized.';
       } else {
-        print('Using platform "${platforms.first.value}".');
+        _log.fine('Using platform "${platforms.first.value}".');
       }
     }
 
@@ -169,7 +193,7 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
       case DownloadArtifact.apiDocs:
         downloadFile = ApiDocsFile.dartApiDocsZip;
         if (filename != null) {
-          print('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("${filename}").');
         }
         break;
       case DownloadArtifact.dartium:
@@ -178,7 +202,7 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
         if (fileConstructors.isEmpty) {
           throw 'File "${filename}" isn\'t supported or recognized.';
         } else {
-          print('Using download file "${fileConstructors.first}".');
+          _log.fine('Using download file "${fileConstructors.first}".');
         }
         downloadFile = DartiumFile.values[fileConstructors.first](
             platforms.first,
@@ -187,7 +211,7 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
       case DownloadArtifact.dartiumAndroid:
         downloadFile = DartiumAndroidFile.contentShell;
         if (filename != null) {
-          print('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("${filename}").');
         }
         break;
       case DownloadArtifact.eclipseUpdate:
@@ -200,13 +224,13 @@ Extracts the ZIP archive top-level directory into the the "extractAs" directory.
         downloadFile = new SdkFile.dartSdk(platforms.first,
             debug: debugBuild, fileAddition: fileAdditions.first);
         if (filename != null) {
-          print('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("${filename}").');
         }
         break;
       case DownloadArtifact.version:
         downloadFile = VersionFile.version;
         if (filename != null) {
-          print('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("${filename}").');
         }
         break;
       default:

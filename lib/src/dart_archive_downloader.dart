@@ -3,13 +3,17 @@ library bwu_dart_archive_downloader.src.dart_archive_downloader;
 import 'dart:async' show Future, Stream;
 import 'dart:io' as io;
 import 'dart:convert' show JSON;
-import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart' show Logger;
+import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 const baseUri = 'http://gsdview.appspot.com/dart-archive/channels/';
 const apiAuthority = 'www.googleapis.com';
 const apiPath = '/storage/v1/b/dart-archive/o';
+
+final _log =
+    new Logger('bwu_dart_archive_downloader.src.dart_archive_downloader');
 
 /// Contains the information gathered from the `VERSION` file in the download
 /// directory.
@@ -96,7 +100,7 @@ class DartArchiveDownloader {
       _downloadFile = new io.File(
           path.join(_downloadDirectory.path, uri.pathSegments.last));
     }
-    print('download "${uri.toString()}" to "${_downloadFile.path}".');
+    _log.fine('download "${uri.toString()}" to "${_downloadFile.path}".');
 
     final http.StreamedResponse response = await request.send();
     if (response.statusCode != 200) {
@@ -154,7 +158,7 @@ class DartArchiveDownloader {
     bool hasMorePages = true;
     Map query = {'prefix': 'channels/${channel.value}', 'delimiter': '/'};
     List<String> versions = <String>[];
-    print('Fetch versions from ${channel.value}.');
+    _log.fine('Fetch versions from ${channel.value}.');
     int currentPage = 1;
 
     while (hasMorePages) {
@@ -164,7 +168,7 @@ class DartArchiveDownloader {
         query.remove('pageToken');
       }
       Uri uri = new Uri.https(apiAuthority, apiPath, query);
-      print('  page: ${currentPage++}');
+      _log.fine('  page: ${currentPage++}');
       final response = JSON.decode((await http.get(uri)).body);
       token = response['nextPageToken'];
       if (token == null || token.isEmpty) {
@@ -175,7 +179,7 @@ class DartArchiveDownloader {
               .map((e) =>
                   e.split('/').where((e) => e != null && e.isNotEmpty).last)
               .where(_isNotWeirdOrInvalidVersion));
-//      print('${token}, ${response['prefixes'].first}');
+//      _log.fine('${token}, ${response['prefixes'].first}');
     }
 
     versions.sort((k, v) => _descendingVersionComparer(k, v) * -1);
@@ -194,7 +198,7 @@ class DartArchiveDownloader {
   Future<String> findVersion(
       DownloadChannel channel, Version semanticVersion) async {
     final versions = await getVersions(channel);
-    print('${versions.length - 2} versions found');
+    _log.fine('${versions.length - 2} versions found');
     return _findVersion(
         channel, semanticVersion, versions, 1, versions.length - 1);
   }
@@ -204,14 +208,14 @@ class DartArchiveDownloader {
     if (start == end) {
       final VersionInfo versionInfo =
           await _getVersionInfo(channel, versions[start]);
-      print('check pos ${start}: ${versionInfo.semanticVersion}');
+      _log.fine('check pos ${start}: ${versionInfo.semanticVersion}');
       return versions[start];
     }
     final mid = start + ((end - start) ~/ 2);
     final VersionInfo versionInfo =
         await _getVersionInfo(channel, versions[mid]);
-    // print('start: ${start} - end: ${end} - mid: ${mid} - version: ${versionInfo.semanticVersion}');
-    print('check pos ${mid}: ${versionInfo.semanticVersion}');
+    // _log.fine('start: ${start} - end: ${end} - mid: ${mid} - version: ${versionInfo.semanticVersion}');
+    _log.fine('check pos ${mid}: ${versionInfo.semanticVersion}');
 
     if (semanticVersion == versionInfo.semanticVersion) {
       return versions[mid];

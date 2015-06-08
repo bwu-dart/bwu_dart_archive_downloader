@@ -2,9 +2,12 @@
 library bwu_dart_archive_downloader.test.dart_sdk_download;
 
 import 'dart:io' as io;
-import 'package:test/test.dart';
 import 'package:bwu_dart_archive_downloader/src/dart_update.dart';
+import 'package:logging/logging.dart' show Logger;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:test/test.dart';
+
+final _log = new Logger(' bwu_dart_archive_downloader.test.dart_sdk_download');
 
 main() {
   group('download SDK', () {
@@ -28,9 +31,9 @@ main() {
         ..backupDirectory = new io.Directory('temp/backup'));
 
       await updater.update();
-      print('done');
+      _log.fine('done');
     },
-        skip: 'just for manual testing',
+//        skip: 'just for manual testing',
         timeout: const Timeout(const Duration(seconds: 500)));
 
     test('download version be/raw/131727', () async {
@@ -42,9 +45,9 @@ main() {
           version: '131727');
       final io.File file = await downloader.downloadFile(uri);
       expect(file.existsSync(), isTrue);
-      print('done');
+      _log.fine('done');
     },
-        skip: 'just for manual testing',
+//        skip: 'just for manual testing',
         timeout: const Timeout(const Duration(seconds: 500)));
 
     test('download version be/raw/ Version 1.2.0-edge.32698', () async {
@@ -58,9 +61,9 @@ main() {
           Platform.getFromSystemPlatform(prefer64bit: true)), version: version);
       final io.File file = await downloader.downloadFile(uri);
       expect(file.existsSync(), isTrue);
-      print('done');
+      _log.fine('done');
     },
-        skip: 'just for manual testing',
+//        skip: 'just for manual testing',
         timeout: const Timeout(const Duration(seconds: 500)));
 
     test('download version stable/release/ Version 1.2.0', () async {
@@ -74,9 +77,9 @@ main() {
           Platform.getFromSystemPlatform(prefer64bit: true)), version: version);
       final io.File file = await downloader.downloadFile(uri);
       expect(file.existsSync(), isTrue);
-      print('done');
+      _log.fine('done');
     },
-        skip: 'just for manual testing',
+//        skip: 'just for manual testing',
         timeout: const Timeout(const Duration(seconds: 500)));
   });
 
@@ -91,5 +94,7 @@ main() {
       expect(versions, contains('131727'));
       expect(versions, isNot(contains('raw')));
     }, timeout: const Timeout(const Duration(seconds: 100)));
-  }, skip: true);
+  }
+//  ,skip: true
+      );
 }

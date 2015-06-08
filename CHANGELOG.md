@@ -1,3 +1,7 @@
+## 0.3.0+2
+- change print to log and default log level to `info`
+- add verbose to print all log output (log level `finest`).
+
 ## 0.3.0+1
 - fix a bug with default version
 

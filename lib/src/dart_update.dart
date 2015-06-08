@@ -1,12 +1,15 @@
 library bwu_dart_archive_downloader.src.dart_update;
 
 import 'dart:async' show Future, Stream;
-import 'dart:io' as io;
 import 'dart:convert' show JSON;
-import 'package:path/path.dart' as path;
+import 'dart:io' as io;
 import 'package:archive/archive.dart';
 import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
 export 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
+import 'package:logging/logging.dart' show Logger;
+import 'package:path/path.dart' as path;
+
+final _log = new Logger('bwu_dart_archive_downloader.src.dart_update');
 
 // TODO(zoechi) investigate this API
 // https://www.googleapis.com/storage/v1/b/dart-archive/o?prefix=channels/stable/release/&delimiter=/
@@ -93,7 +96,7 @@ class DartUpdate {
     files.where((f) => f != null).forEach((f) => print(f.path));
 
     await Future.wait(pendingDownloads);
-    print('Downloads finished');
+    _log.info('Downloads finished');
     //}
 
   }
@@ -178,7 +181,7 @@ String getZipRootDirectory(io.File archive) {
 /// directory of the Zip archive)
 Future installArchive(io.File archive, io.Directory installDirectory,
     {String replaceRootDirectoryName}) async {
-  print(
+  _log.info(
       'Extract "${archive.absolute.path}" to "${installDirectory.absolute.path}".');
   final io.Process process = await io.Process.start('unzip', [
     archive.absolute.path,
@@ -207,23 +210,23 @@ Future installArchive(io.File archive, io.Directory installDirectory,
 //        } else {
 //          filename = (entity as ZipEntryImpl).name;
 //        }
-//        print(filename);
+//        _log.fine(filename);
 //
 //        if (entity.isDirectory) {
 //          final dir =
 //              new io.Directory(path.join(installDirectory.path, filename))
 //            ..createSync(recursive: true);
-//          print('created: ${dir.path}');
+//          _log.info('created: ${dir.path}');
 //        } else {
 //          final newFile =
 //              new io.File(path.join(installDirectory.path, filename))
 //            ..createSync(recursive: true);
 //
 //          await newFile.openWrite().addStream((entity as ZipEntry).content());
-//          print('created: ${newFile.path}');
+//          _log.info('created: ${newFile.path}');
 //        }
 //      } else {
-//        print(entity.runtimeType);
+//        _log.fine(entity.runtimeType);
 //      }
 //    }
 ////    final archive = loadArchiveContent(sdkArchive);
@@ -233,16 +236,16 @@ Future installArchive(io.File archive, io.Directory installDirectory,
 ////        final dir = new io.Directory(
 ////            path.join(_options.installDirectory.path, filename))
 ////          ..createSync(recursive: true);
-////        print('created: ${dir.path}');
+////        _log.info('created: ${dir.path}');
 ////      } else {
 ////        List<int> data = file.content;
 ////        final newFile =
 ////            new io.File(path.join(_options.installDirectory.path, filename))
 ////          ..createSync(recursive: true)
 ////          ..writeAsBytesSync(data);
-////        print('create: ${newFile.path}');
+////        _log.info('create: ${newFile.path}');
 ////      }
 ////    }
-//    print('Install "${installDirectory.path}" completed');
+//    _log.info('Install "${installDirectory.path}" completed');
 //  }
 }
