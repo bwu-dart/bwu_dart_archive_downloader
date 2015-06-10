@@ -3,8 +3,8 @@ BWU Dart Archive Downloader
 
 [![Star this Repo](https://img.shields.io/github/stars/bwu-dart/bwu_dart_archive_downloader.svg?style=flat)](https://github.com/bwu-dart/bwu_dart_archive_downloader)
 [![Pub Package](https://img.shields.io/pub/v/bwu_dart_archive_downloader.svg?style=flat)](https://pub.dartlang.org/packages/bwu_dart_archive_downloader)
-[![Build Status](https://travis-ci.org/bwu-dart/bwu_dart_archive_downloader.svg?branch=travis)](https://travis-ci.org/bwu-dart/bwu_dart_archive_downloader)
-[![Coverage Status](https://coveralls.io/repos/bwu-dart/bwu_dart_archive_downloader/badge.svg)](https://coveralls.io/r/bwu-dart/bwu_dart_archive_downloader)
+[![Build Status](https://travis-ci.org/bwu-dart/bwu_dart_archive_downloader.svg?branch=master)](https://travis-ci.org/bwu-dart/bwu_dart_archive_downloader)
+[![Coverage Status](https://coveralls.io/repos/bwu-dart/bwu_dart_archive_downloader/badge.svg?branch=master)](https://coveralls.io/r/bwu-dart/bwu_dart_archive_downloader)
 
 BWU Dart Archive Downloader makes it easy to download files like API docs,
 Dartium or content-shell, Dartium for Android APK, Dart Eclipse plugin, or the 
