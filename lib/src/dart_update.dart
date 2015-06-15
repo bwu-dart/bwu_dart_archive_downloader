@@ -189,8 +189,8 @@ Future installArchive(io.File archive, io.Directory installDirectory,
     '-d',
     installDirectory.absolute.path
   ]);
-  io.stdout.addStream(process.stdout);
-  io.stderr.addStream(process.stderr);
+  process.stdout.listen(io.stdout.add);
+  process.stderr.listen(io.stderr.add);
   await process.exitCode;
   if (replaceRootDirectoryName != null) {
     new io.Directory(

@@ -195,6 +195,11 @@ class DartArchiveDownloader {
         !['raw', 'be', '42', 'channels', 'latest',].contains(version.trim());
   }
 
+  /// Tries to find the directory name containing the requested version.
+  /// If the requested version doesn't exit, the the next found version is
+  /// returned.
+  /// If you want to ensure to only get exactly the requested version compare
+  /// the requested with the returned version.
   Future<String> findVersion(
       DownloadChannel channel, Version semanticVersion) async {
     final versions = await getVersions(channel);
@@ -211,9 +216,15 @@ class DartArchiveDownloader {
       _log.fine('check pos ${start}: ${versionInfo.semanticVersion}');
       return versions[start];
     }
-    final mid = start + ((end - start) ~/ 2);
-    final VersionInfo versionInfo =
-        await _getVersionInfo(channel, versions[mid]);
+    int mid = start + ((end - start) ~/ 2);
+    VersionInfo versionInfo;
+    while(versionInfo == null) {
+      try {
+          versionInfo = await _getVersionInfo(channel, versions[mid]);
+      } catch(_){
+        mid++;
+      };
+    }
     // _log.fine('start: ${start} - end: ${end} - mid: ${mid} - version: ${versionInfo.semanticVersion}');
     _log.fine('check pos ${mid}: ${versionInfo.semanticVersion}');
 
