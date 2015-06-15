@@ -218,12 +218,12 @@ class DartArchiveDownloader {
     }
     int mid = start + ((end - start) ~/ 2);
     VersionInfo versionInfo;
-    while(versionInfo == null) {
+    while (versionInfo == null) {
       try {
-          versionInfo = await _getVersionInfo(channel, versions[mid]);
-      } catch(_){
+        versionInfo = await _getVersionInfo(channel, versions[mid]);
+      } catch (_) {
         mid++;
-      };
+      }
     }
     // _log.fine('start: ${start} - end: ${end} - mid: ${mid} - version: ${versionInfo.semanticVersion}');
     _log.fine('check pos ${mid}: ${versionInfo.semanticVersion}');
