@@ -1,3 +1,6 @@
+## 0.3.0+3
+- use Grinder tasks from `bwu_grinder_tasks` instead of `bwu_utils_dev`
+
 ## 0.3.0+2
 - change print to log and default log level to `info`
 - add verbose to print all log output (log level `finest`).

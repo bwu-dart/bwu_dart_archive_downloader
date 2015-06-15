@@ -1,3 +1,4 @@
+@TestOn('vm')
 library bwu_dart_archive_downloader.test.dart_archive_downloader;
 
 import 'package:test/test.dart';

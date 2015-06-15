@@ -59,7 +59,7 @@ The channel to download from.
     - stable/raw
     - stable/release
     - stable/signed
-    - dev/raw
+    - dev/release
     - dev/raw
     - dev/signed
     - be/raw
