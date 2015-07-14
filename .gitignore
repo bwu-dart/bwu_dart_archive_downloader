@@ -1,6 +1,6 @@
 packages
+.packages
 .pub
 .idea
-build
 # download directory for the example
 temp
