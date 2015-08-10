@@ -1,8 +1,9 @@
 library bwu_dart_archive_downloader.src.dart_archive_downloader;
 
 import 'dart:async' show Future, Stream;
-import 'dart:io' as io;
 import 'dart:convert' show JSON;
+import 'dart:io' as io;
+
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart' show Logger;
 import 'package:path/path.dart' as path;

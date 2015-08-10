@@ -3,11 +3,13 @@ library bwu_dart_archive_downloader.src.dart_update;
 import 'dart:async' show Future, Stream;
 import 'dart:convert' show JSON;
 import 'dart:io' as io;
+
 import 'package:archive/archive.dart';
 import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
-export 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
 import 'package:logging/logging.dart' show Logger;
 import 'package:path/path.dart' as path;
+
+export 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
 
 final _log = new Logger('bwu_dart_archive_downloader.src.dart_update');
 
