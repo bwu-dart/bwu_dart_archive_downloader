@@ -270,7 +270,7 @@ class DownloadChannel {
   static const stableRelease = const DownloadChannel('stable/release/');
   static const stableSigned = const DownloadChannel('stable/signed/');
   static const devRaw = const DownloadChannel('dev/raw/');
-  static const devRelease = const DownloadChannel('dev/raw/');
+  static const devRelease = const DownloadChannel('dev/release/');
   static const devSigned = const DownloadChannel('dev/signed/');
   static const beRaw = const DownloadChannel('be/raw/');
 
