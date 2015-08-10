@@ -17,7 +17,6 @@ final _log = new Logger('bwu_dart_archive_downloader.src.dart_update');
 
 /// Supported options for the SDK download.
 class SdkDownloadOptions {
-
   /// The directory to store the downloaded file in.
   io.Directory downloadDirectory;
 
@@ -78,18 +77,18 @@ class DartUpdate {
         .then((f) => installArchive(f, _options.installDirectory)));
 
     pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.dartiumZip(_options.targetPlatform)).then(
-        (f) => installArchive(f, _options.installDirectory,
+        new DartiumFile.dartiumZip(_options.targetPlatform)).then((f) =>
+        installArchive(f, _options.installDirectory,
             replaceRootDirectoryName: 'dartium')));
 
     pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.contentShellZip(_options.targetPlatform)).then(
-        (f) => installArchive(f, _options.installDirectory,
+        new DartiumFile.contentShellZip(_options.targetPlatform)).then((f) =>
+        installArchive(f, _options.installDirectory,
             replaceRootDirectoryName: 'content_shell')));
 
     pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.chromedriverZip(_options.targetPlatform)).then(
-        (f) => installArchive(f, _options.installDirectory,
+        new DartiumFile.chromedriverZip(_options.targetPlatform)).then((f) =>
+        installArchive(f, _options.installDirectory,
             replaceRootDirectoryName: 'chromedriver')));
 
     final List<io.File> files = await Future.wait(pendingDownloads);
@@ -98,7 +97,6 @@ class DartUpdate {
     await Future.wait(pendingDownloads);
     _log.info('Downloads finished');
     //}
-
   }
 
   /// Load the `VERSION` file from the currently installed SDK
@@ -183,12 +181,8 @@ Future installArchive(io.File archive, io.Directory installDirectory,
     {String replaceRootDirectoryName}) async {
   _log.info(
       'Extract "${archive.absolute.path}" to "${installDirectory.absolute.path}".');
-  final io.Process process = await io.Process.start('unzip', [
-    archive.absolute.path,
-    '*/*',
-    '-d',
-    installDirectory.absolute.path
-  ]);
+  final io.Process process = await io.Process.start('unzip',
+      [archive.absolute.path, '*/*', '-d', installDirectory.absolute.path]);
   process.stdout.listen(io.stdout.add);
   process.stderr.listen(io.stderr.add);
   await process.exitCode;

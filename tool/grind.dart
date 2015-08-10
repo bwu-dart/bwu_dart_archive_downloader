@@ -1,8 +1,10 @@
 library bwu_dart_archive_downloader.tool.grind;
 
 import 'dart:io' as io;
-import 'package:path/path.dart' as path;
+
 import 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart' as tasks;
+import 'package:path/path.dart' as path;
+
 export 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart' hide main;
 
 main(List<String> args) {

@@ -174,11 +174,9 @@ class DartArchiveDownloader {
       if (token == null || token.isEmpty) {
         hasMorePages = false;
       }
-      versions
-          .addAll(response['prefixes']
-              .map((e) =>
-                  e.split('/').where((e) => e != null && e.isNotEmpty).last)
-              .where(_isNotWeirdOrInvalidVersion));
+      versions.addAll(response['prefixes']
+          .map((e) => e.split('/').where((e) => e != null && e.isNotEmpty).last)
+          .where(_isNotWeirdOrInvalidVersion));
 //      _log.fine('${token}, ${response['prefixes'].first}');
     }
 
@@ -270,7 +268,7 @@ class DownloadChannel {
   static const stableRelease = const DownloadChannel('stable/release/');
   static const stableSigned = const DownloadChannel('stable/signed/');
   static const devRaw = const DownloadChannel('dev/raw/');
-  static const devRelease = const DownloadChannel('dev/raw/');
+  static const devRelease = const DownloadChannel('dev/release/');
   static const devSigned = const DownloadChannel('dev/signed/');
   static const beRaw = const DownloadChannel('be/raw/');
 
@@ -294,6 +292,7 @@ class DownloadChannel {
     return Uri.parse(
         '${baseUri}${value}${version != null ? version : 'latest' }/${file.artifact.value}${file.value}');
   }
+
   const DownloadChannel(this.value);
 }
 
@@ -378,15 +377,18 @@ class DartiumFile extends DownloadFile {
           debug: debug, fileAddition: fileAddition));
 
   static final values = {
-    'chromedriver': (Platform platform, {bool debug: false,
+    'chromedriver': (Platform platform,
+            {bool debug: false,
             FileAddition fileAddition: FileAddition.none}) =>
         new DartiumFile.chromedriverZip(platform,
             debug: debug, fileAddition: fileAddition),
-    'content_shell': (Platform platform, {bool debug: false,
+    'content_shell': (Platform platform,
+            {bool debug: false,
             FileAddition fileAddition: FileAddition.none}) =>
         new DartiumFile.contentShellZip(platform,
             debug: debug, fileAddition: fileAddition),
-    'dartium': (Platform platform, {bool debug: false,
+    'dartium': (Platform platform,
+            {bool debug: false,
             FileAddition fileAddition: FileAddition.none}) =>
         new DartiumFile.dartiumZip(platform,
             debug: debug, fileAddition: fileAddition)
@@ -464,6 +466,7 @@ class Platform {
     }
     return null;
   }
+
   static const androidArm = const Platform('android-arm');
   static const linuxIa32 = const Platform('linux-ia32');
   static const linuxX64 = const Platform('linux-x64');

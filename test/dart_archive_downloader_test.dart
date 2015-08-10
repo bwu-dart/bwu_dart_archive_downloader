@@ -1,8 +1,8 @@
 @TestOn('vm')
 library bwu_dart_archive_downloader.test.dart_archive_downloader;
 
-import 'package:test/test.dart';
 import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
+import 'package:test/test.dart';
 
 main() {
   group('operator', () {

@@ -40,7 +40,8 @@ main() {
       final channel = DownloadChannel.beRaw;
       final downloader =
           new DartArchiveDownloader(new io.Directory('temp/install'));
-      final uri = channel.getUri(new SdkFile.dartSdk(
+      final uri = channel.getUri(
+          new SdkFile.dartSdk(
               Platform.getFromSystemPlatform(prefer64bit: true)),
           version: '131727');
       final io.File file = await downloader.downloadFile(uri);
@@ -57,8 +58,10 @@ main() {
       final version = await downloader.findVersion(
           channel, new Version.parse('1.2.0-edge.32698'));
       expect(version, isNotNull);
-      final uri = await channel.getUri(new SdkFile.dartSdk(
-          Platform.getFromSystemPlatform(prefer64bit: true)), version: version);
+      final uri = await channel.getUri(
+          new SdkFile.dartSdk(
+              Platform.getFromSystemPlatform(prefer64bit: true)),
+          version: version);
       final io.File file = await downloader.downloadFile(uri);
       expect(file.existsSync(), isTrue);
       _log.fine('done');
@@ -73,8 +76,10 @@ main() {
       final version =
           await downloader.findVersion(channel, new Version.parse('1.2.0'));
       expect(version, isNotNull);
-      final uri = await channel.getUri(new SdkFile.dartSdk(
-          Platform.getFromSystemPlatform(prefer64bit: true)), version: version);
+      final uri = await channel.getUri(
+          new SdkFile.dartSdk(
+              Platform.getFromSystemPlatform(prefer64bit: true)),
+          version: version);
       final io.File file = await downloader.downloadFile(uri);
       expect(file.existsSync(), isTrue);
       _log.fine('done');

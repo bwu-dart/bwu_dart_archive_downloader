@@ -1,3 +1,13 @@
+## 0.3.0+6
+- fix `devRelease` constant (copy-paste-error)
+- apply new dartformat and organize imports
+
+## 0.3.0+5
+- find the directory for a specified version
+
+## 0.3.0+4
+- add quiver_log dependency
+
 ## 0.3.0+3
 - use Grinder tasks from `bwu_grinder_tasks` instead of `bwu_utils_dev`
 
