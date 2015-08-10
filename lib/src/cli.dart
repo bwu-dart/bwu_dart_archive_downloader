@@ -1,14 +1,14 @@
 library bwu_dart_archive_downloader.src.cli;
 
 import 'dart:io' as io;
-import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
-import 'package:unscripted/unscripted.dart';
-import 'package:pub_semver/pub_semver.dart';
-import 'package:bwu_dart_archive_downloader/dart_update.dart';
 
+import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
+import 'package:bwu_dart_archive_downloader/dart_update.dart';
 import 'package:logging/logging.dart' show Logger, Level;
+import 'package:pub_semver/pub_semver.dart';
 import 'package:quiver_log/log.dart' show BASIC_LOG_FORMATTER, PrintAppender;
 import 'package:stack_trace/stack_trace.dart' show Chain;
+import 'package:unscripted/unscripted.dart';
 
 final _log = new Logger('bwu_dart_archive_downloader.src.cli');
 
@@ -35,25 +35,33 @@ class DDownScriptModel extends Object with DownloadCommandModel {
 }
 
 class DownloadCommandModel {
-  @SubCommand(help: '''
+  @SubCommand(
+      help: '''
 Download a file from the Dart archive (http://gsdview.appspot.com/dart-archive/channels/).
 Version and download channel can be selected.''')
-  down({@Option(help: '''
+  down(
+      {@Option(
+          help: '''
 The base name of the file to download excluding extensions like "-ia32", ".md5sum", ... .''',
-      abbr: 'f') //
+          abbr: 'f') //
 //          defaultsTo: defaultStaticFilesSourceDirectory) //
       String filename, //
-      @Option(help: '''
+      @Option(
+          help: '''
 The absolute or relative path where the directory should be created.''',
           abbr: 'o',
           defaultsTo: '.') //
       String outputDirectory,
       //
-      @Option(help: '''
-The version to download.''', abbr: 'v', defaultsTo: 'latest') //
+      @Option(
+          help: '''
+The version to download.''',
+          abbr: 'v',
+          defaultsTo: 'latest') //
       String version,
       //
-      @Option(help: '''
+      @Option(
+          help: '''
 The channel to download from.
   Possible values:
     - stable/raw
@@ -64,10 +72,12 @@ The channel to download from.
     - dev/signed
     - be/raw
 ''', //
-          abbr: 'c', defaultsTo: 'stable/release') //
+          abbr: 'c',
+          defaultsTo: 'stable/release') //
       String channel,
       //
-      @Option(help: '''
+      @Option(
+          help: '''
 Choose a folder in the archive:
   Possible values:
     - api-docs
@@ -77,10 +87,13 @@ Choose a folder in the archive:
     - (editor - not implemented)
     - sdk
     - VERSION
-''', abbr: 'a', defaultsTo: 'sdk') //
+''',
+          abbr: 'a',
+          defaultsTo: 'sdk') //
       String artifact,
       //
-      @Option(help: '''
+      @Option(
+          help: '''
 The target operating system and architecture. If omitted it will be derived
 from the system.
   Possible values:
@@ -89,46 +102,60 @@ from the system.
     - linux-x64
     - macos-ia32
     - windows-ia32
-''', abbr: 'p') //
+''',
+          abbr: 'p') //
 //          defaultsTo: 'current system') //
-      String platform, @Option(help: '''
+      String platform,
+      @Option(
+          help: '''
 Choose an addon-file instead of the main file.
   Possible values:
     - md5sum
     - sha256sum
-''', abbr: 's', defaultsTo: '') //
+''',
+          abbr: 's',
+          defaultsTo: '') //
       String fileAddition,
       //
-      @Flag(help: '''
+      @Flag(
+          help: '''
 If "platform" is omitted and derived from the system, should it download the
 64 bit version if available?.''',
           abbr: 'b',
           defaultsTo: true,
           negatable: true) //
       bool prefer64bit, //
-      @Flag(help: '''
+      @Flag(
+          help: '''
 Get the debug build of the file.''',
 //          abbr: 'd',
-          defaultsTo: false, negatable: true) //
+          defaultsTo: false,
+          negatable: true) //
       bool debugBuild, //
-      @Flag(help: '''
+      @Flag(
+          help: '''
 Extract the downloaded ZIP archive file.''',
           abbr: 'e',
           defaultsTo: false,
           negatable: true) //
       bool extract, //
-      @Option(help: '''
+      @Option(
+          help: '''
 Extracts the ZIP archive top-level directory into the the "extractAs" directory.''',
-      abbr: 'd') //
+          abbr: 'd') //
 //          defaultsTo: '.') //
       String extractAs, //
-      @Option(help: '''
+      @Option(
+          help: '''
 Extracts the ZIP archive top-level directory into the the "extractAs" directory.''',
           abbr: 't',
           defaultsTo: '.') //
       String extractTo, //
-      @Flag(help: '''
-Verbose logging output.''', defaultsTo: false, negatable: true) //
+      @Flag(
+          help: '''
+Verbose logging output.''',
+          defaultsTo: false,
+          negatable: true) //
       bool verbose}) async {
     if (verbose) {
       Logger.root.level = Level.FINEST;
@@ -206,7 +233,8 @@ Verbose logging output.''', defaultsTo: false, negatable: true) //
         }
         downloadFile = DartiumFile.values[fileConstructors.first](
             platforms.first,
-            debug: debugBuild, fileAddition: fileAdditions.first);
+            debug: debugBuild,
+            fileAddition: fileAdditions.first);
         break;
       case DownloadArtifact.dartiumAndroid:
         downloadFile = DartiumAndroidFile.contentShell;
@@ -242,9 +270,8 @@ Verbose logging output.''', defaultsTo: false, negatable: true) //
     io.File archiveFile = await downloader.downloadFile(uri);
     if (extract) {
       installArchive(archiveFile, new io.Directory(extractTo),
-          replaceRootDirectoryName: extractAs != null && extractAs.isNotEmpty
-              ? extractAs
-              : null);
+          replaceRootDirectoryName:
+              extractAs != null && extractAs.isNotEmpty ? extractAs : null);
     }
   }
 }
