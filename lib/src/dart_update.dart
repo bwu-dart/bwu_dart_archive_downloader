@@ -1,6 +1,6 @@
 library bwu_dart_archive_downloader.src.dart_update;
 
-import 'dart:async' show Future, Stream;
+import 'dart:async' show Future;
 import 'dart:convert' show JSON;
 import 'dart:io' as io;
 
@@ -73,24 +73,25 @@ class DartUpdate {
     //if(latestVersion > currentVersion) {
     backup(currentVersion);
 
-    final pendingDownloads = [];
+    final pendingDownloads = <Future<io.File>>[];
     pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.sdk,
             new SdkFile.dartSdk(_options.targetPlatform))
-        .then((f) => installArchive(f, _options.installDirectory)));
+        .then/*<io.File>*/(
+            (f) => installArchive(f, _options.installDirectory)));
 
     pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.dartiumZip(_options.targetPlatform)).then((f) =>
-        installArchive(f, _options.installDirectory,
+            new DartiumFile.dartiumZip(_options.targetPlatform))
+        .then/*<io.File>*/((f) => installArchive(f, _options.installDirectory,
             replaceRootDirectoryName: 'dartium')));
 
     pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.contentShellZip(_options.targetPlatform)).then((f) =>
-        installArchive(f, _options.installDirectory,
+            new DartiumFile.contentShellZip(_options.targetPlatform))
+        .then/*<io.File>*/((f) => installArchive(f, _options.installDirectory,
             replaceRootDirectoryName: 'content_shell')));
 
     pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.chromedriverZip(_options.targetPlatform)).then((f) =>
-        installArchive(f, _options.installDirectory,
+            new DartiumFile.chromedriverZip(_options.targetPlatform))
+        .then/*<io.File>*/((f) => installArchive(f, _options.installDirectory,
             replaceRootDirectoryName: 'chromedriver')));
 
     final List<io.File> files = await Future.wait(pendingDownloads);
@@ -101,17 +102,21 @@ class DartUpdate {
     //}
   }
 
-  /// Load the `VERSION` file from the currently installed SDK
   io.File versionFile(String suffix) => new io.File(path.join(
-      _options.downloadDirectory.path,
-      '${DownloadArtifact.version.value}_${_options.targetPlatform.value}_VERSION_${suffix}.json'));
+      _options.installDirectory.path,
+      '${DownloadArtifact.version.value}_${_options.targetPlatform.value}'
+      '_VERSION_${suffix}.json'));
 
+  /// Load the `VERSION` file from the currently installed SDK
   VersionInfo getCurrentVersionInfo() {
-    final currentVersionFile = versionFile('current');
+    final currentVersionFilePath =
+        path.join(_options.installDirectory.path, 'VERSION.json');
+    final currentVersionFile = new io.File(currentVersionFilePath);
     if (currentVersionFile.existsSync()) {
       try {
         return new VersionInfo.fromJson(
-            JSON.decode(currentVersionFile.readAsStringSync()));
+            JSON.decode(currentVersionFile.readAsStringSync())
+            as Map<String, dynamic>);
       } catch (_) {}
     }
     return new VersionInfo();
@@ -126,7 +131,7 @@ class DartUpdate {
         .downloadFile(_options.channel.getUri(VersionFile.version));
     newVersionFile = newVersionFile.renameSync(versionFile('new').path);
     return new VersionInfo.fromJson(
-        JSON.decode(newVersionFile.readAsStringSync()));
+        JSON.decode(newVersionFile.readAsStringSync()) as Map<String, dynamic>);
   }
 
   /// Execute the download of the SDK.
@@ -154,10 +159,10 @@ class DartUpdate {
       return;
     }
     final dateString = new DateTime.now().toIso8601String().replaceAll(':', '');
-    var currentVersionName = currentVersion != null &&
-            currentVersion.revision != null
-        ? '${currentVersion.revision}_${dateString}'
-        : dateString;
+    final currentVersionName =
+        currentVersion != null && currentVersion.revision != null
+            ? '${currentVersion.revision}_$dateString'
+            : dateString;
     backupDirectory = new io.Directory(
         path.join(_options.backupDirectory.path, currentVersionName));
 

@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 
 final _log = new Logger(' bwu_dart_archive_downloader.test.dart_sdk_download');
 
-main() {
+void main() {
   group('download SDK', () {
     io.Directory tempDir;
 

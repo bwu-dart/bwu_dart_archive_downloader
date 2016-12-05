@@ -1,3 +1,7 @@
+## 0.4.0-dev.0
+- VERSION.json is created in the `installDirectory`
+- fix strong mode hints
+
 ## 0.3.0+6
 - fix `devRelease` constant (copy-paste-error)
 - apply new dartformat and organize imports

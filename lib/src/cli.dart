@@ -10,20 +10,21 @@ import 'package:quiver_log/log.dart' show BASIC_LOG_FORMATTER, PrintAppender;
 import 'package:stack_trace/stack_trace.dart' show Chain;
 import 'package:unscripted/unscripted.dart';
 
-final _log = new Logger('bwu_dart_archive_downloader.src.cli');
+final Logger _log = new Logger('bwu_dart_archive_downloader.src.cli');
 
 void main(List<String> args) {
   Logger.root.level = Level.INFO;
   var appender = new PrintAppender(BASIC_LOG_FORMATTER);
   appender.attachLogger(Logger.root);
 
-  Chain.capture(() => _main(args), onError: (error, stack) {
+  Chain.capture/*<dynamic>*/(() => _main(args),
+      onError: (dynamic error, stack) {
     _log.shout(error);
     _log.shout(stack.terse);
   });
 }
 
-_main([List<String> arguments]) =>
+dynamic _main([List<String> arguments]) =>
     new Script(DownloadCommandModel).execute(arguments);
 
 class DDownScriptModel extends Object with DownloadCommandModel {
@@ -39,26 +40,26 @@ class DownloadCommandModel {
       help: '''
 Download a file from the Dart archive (http://gsdview.appspot.com/dart-archive/channels/).
 Version and download channel can be selected.''')
-  down(
+  dynamic down(
       {@Option(
           help: '''
 The base name of the file to download excluding extensions like "-ia32", ".md5sum", ... .''',
           abbr: 'f') //
 //          defaultsTo: defaultStaticFilesSourceDirectory) //
-      String filename, //
+          String filename, //
       @Option(
           help: '''
 The absolute or relative path where the directory should be created.''',
           abbr: 'o',
           defaultsTo: '.') //
-      String outputDirectory,
+          String outputDirectory,
       //
       @Option(
           help: '''
 The version to download.''',
           abbr: 'v',
           defaultsTo: 'latest') //
-      String version,
+          String version,
       //
       @Option(
           help: '''
@@ -74,7 +75,7 @@ The channel to download from.
 ''', //
           abbr: 'c',
           defaultsTo: 'stable/release') //
-      String channel,
+          String channel,
       //
       @Option(
           help: '''
@@ -90,7 +91,7 @@ Choose a folder in the archive:
 ''',
           abbr: 'a',
           defaultsTo: 'sdk') //
-      String artifact,
+          String artifact,
       //
       @Option(
           help: '''
@@ -105,7 +106,7 @@ from the system.
 ''',
           abbr: 'p') //
 //          defaultsTo: 'current system') //
-      String platform,
+          String platform,
       @Option(
           help: '''
 Choose an addon-file instead of the main file.
@@ -115,7 +116,7 @@ Choose an addon-file instead of the main file.
 ''',
           abbr: 's',
           defaultsTo: '') //
-      String fileAddition,
+          String fileAddition,
       //
       @Flag(
           help: '''
@@ -124,39 +125,39 @@ If "platform" is omitted and derived from the system, should it download the
           abbr: 'b',
           defaultsTo: true,
           negatable: true) //
-      bool prefer64bit, //
+          bool prefer64bit, //
       @Flag(
           help: '''
 Get the debug build of the file.''',
 //          abbr: 'd',
           defaultsTo: false,
           negatable: true) //
-      bool debugBuild, //
+          bool debugBuild, //
       @Flag(
           help: '''
 Extract the downloaded ZIP archive file.''',
           abbr: 'e',
           defaultsTo: false,
           negatable: true) //
-      bool extract, //
+          bool extract, //
       @Option(
           help: '''
 Extracts the ZIP archive top-level directory into the the "extractAs" directory.''',
           abbr: 'd') //
 //          defaultsTo: '.') //
-      String extractAs, //
+          String extractAs, //
       @Option(
           help: '''
 Extracts the ZIP archive top-level directory into the the "extractAs" directory.''',
           abbr: 't',
           defaultsTo: '.') //
-      String extractTo, //
+          String extractTo, //
       @Flag(
           help: '''
 Verbose logging output.''',
           defaultsTo: false,
           negatable: true) //
-      bool verbose}) async {
+          bool verbose}) async {
     if (verbose) {
       Logger.root.level = Level.FINEST;
     }
@@ -207,7 +208,8 @@ Verbose logging output.''',
     if (platform == null || platform.isEmpty) {
       platforms = [Platform.getFromSystemPlatform(prefer64bit: prefer64bit)];
     } else {
-      platforms = Platform.values.where((v) => v.value.startsWith(platform));
+      platforms =
+          Platform.values.where((Platform v) => v.value.startsWith(platform));
       if (platforms.isEmpty) {
         throw 'Platform "${platform}" isn\'t supported or recognized.';
       } else {
@@ -244,9 +246,6 @@ Verbose logging output.''',
         break;
       case DownloadArtifact.eclipseUpdate:
         throw 'Download Eclipse updates isn\'t yet implemented.';
-        break;
-      case DownloadArtifact.editor:
-        throw 'Download DartEditor isn\'t yet implemented.';
         break;
       case DownloadArtifact.sdk:
         downloadFile = new SdkFile.dartSdk(platforms.first,

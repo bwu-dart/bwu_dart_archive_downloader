@@ -4,7 +4,7 @@ library bwu_dart_archive_downloader.test.dart_archive_downloader;
 import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
 import 'package:test/test.dart';
 
-main() {
+void main() {
   group('operator', () {
     test('<', () {
       expect(new VersionInfo(revision: '1') < new VersionInfo(revision: '2'),

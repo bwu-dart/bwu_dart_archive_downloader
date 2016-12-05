@@ -1,6 +1,6 @@
 library bwu_dart_archive_downloader.src.dart_archive_downloader;
 
-import 'dart:async' show Future, Stream;
+import 'dart:async' show Future;
 import 'dart:convert' show JSON;
 import 'dart:io' as io;
 
@@ -28,8 +28,8 @@ class VersionInfo {
   }
 
   VersionInfo.fromJson(Map json) {
-    revision = json['revision'];
-    version = json['version'];
+    revision = json['revision'] as String;
+    version = json['version'] as String;
     final d = json['date'] as String;
     final year = int.parse(d.substring(0, 4));
     final month = int.parse(d.substring(5, 7));
@@ -43,7 +43,7 @@ class VersionInfo {
     return new Version.parse(version);
   }
 
-  bool operator >(other) {
+  bool operator >(dynamic other) {
     if (other == null || other is! VersionInfo) {
       return true;
     }
@@ -51,7 +51,7 @@ class VersionInfo {
     return revision.compareTo((other as VersionInfo).revision) > 0;
   }
 
-  bool operator <(other) {
+  bool operator <(dynamic other) {
     if (other == null || other is! VersionInfo) {
       return false;
     }
@@ -59,16 +59,16 @@ class VersionInfo {
     return revision.compareTo((other as VersionInfo).revision) < 0;
   }
 
-  bool operator ==(other) {
+  bool operator ==(dynamic other) {
     if (other == null || other is! VersionInfo) {
       return false;
     }
     return revision == (other as VersionInfo).revision;
   }
 
-  bool operator <=(other) => this < other || this == other;
+  bool operator <=(dynamic other) => this < other || this == other;
 
-  bool operator >=(other) => this > other || this == other;
+  bool operator >=(dynamic other) => this > other || this == other;
 }
 
 /// Downloads an artifact from the Dart archive site.
@@ -122,7 +122,7 @@ class DartArchiveDownloader {
         }
       }
     });
-    await subscription.asFuture();
+    await subscription.asFuture/*<Null>*/();
     //io.stdout.writeln();
     await downloadFileSink.flush();
     await downloadFileSink.close();
@@ -157,7 +157,10 @@ class DartArchiveDownloader {
     }
     String token;
     bool hasMorePages = true;
-    Map query = {'prefix': 'channels/${channel.value}', 'delimiter': '/'};
+    final query = <String, String>{
+      'prefix': 'channels/${channel.value}',
+      'delimiter': '/'
+    };
     List<String> versions = <String>[];
     _log.fine('Fetch versions from ${channel.value}.');
     int currentPage = 1;
@@ -170,12 +173,13 @@ class DartArchiveDownloader {
       }
       Uri uri = new Uri.https(apiAuthority, apiPath, query);
       _log.fine('  page: ${currentPage++}');
-      final response = JSON.decode((await http.get(uri)).body);
-      token = response['nextPageToken'];
+      final Map<String, dynamic> response =
+          JSON.decode((await http.get(uri)).body) as Map<String, dynamic>;
+      token = response['nextPageToken'] as String;
       if (token == null || token.isEmpty) {
         hasMorePages = false;
       }
-      versions.addAll(response['prefixes']
+      versions.addAll((response['prefixes'] as List<String>)
           .map((e) => e.split('/').where((e) => e != null && e.isNotEmpty).last)
           .where(_isNotWeirdOrInvalidVersion));
 //      _log.fine('${token}, ${response['prefixes'].first}');
@@ -191,7 +195,13 @@ class DartArchiveDownloader {
     return version.isNotEmpty &&
         !weirdBuildNumberRegExp.hasMatch(
             version) /* ignore a few versions where Dartium was stored in another folder with suffix '.0' */ &&
-        !['raw', 'be', '42', 'channels', 'latest',].contains(version.trim());
+        ![
+          'raw',
+          'be',
+          '42',
+          'channels',
+          'latest',
+        ].contains(version.trim());
   }
 
   /// Tries to find the directory name containing the requested version.
@@ -240,7 +250,8 @@ class DartArchiveDownloader {
       DownloadChannel channel, String version) async {
     final content = await downloadContent(
         channel.getUri(VersionFile.version, version: version));
-    return new VersionInfo.fromJson(JSON.decode(content));
+    return new VersionInfo.fromJson(
+        JSON.decode(content) as Map<String, dynamic>);
   }
 }
 
@@ -305,17 +316,14 @@ class DownloadArtifact {
       const DownloadArtifact('dartium_android/', DartiumAndroidFile);
   static const eclipseUpdate =
       const DownloadArtifact('editor-eclipse-update/', EditorEclipseUpdateFile);
-  @deprecated
-  static const editor = const DownloadArtifact('editor/', EditorFile);
   static const sdk = const DownloadArtifact('sdk/', SdkFile);
   static const version = const DownloadArtifact('', VersionFile);
 
-  static const values = const [
+  static const values = const <DownloadArtifact>[
     apiDocs,
     dartium,
     dartiumAndroid,
     eclipseUpdate,
-    editor,
     sdk,
     version
   ];
@@ -422,17 +430,6 @@ class EditorEclipseUpdateFile extends DownloadFile {
   const EditorEclipseUpdateFile(String value) : super(value);
 }
 
-/// To build a file name for downloading Eclipse plugin updates.
-// TODO(zoechi) not yet supported
-class EditorFile extends DownloadFile {
-  static const contentShell = const EditorFile('');
-
-  @override
-  DownloadArtifact get artifact => DownloadArtifact.editor;
-
-  const EditorFile(String value) : super(value);
-}
-
 /// To build a file name for downloading the Dart SDK.
 class SdkFile extends DownloadFile {
   SdkFile._(String value) : super(value);
@@ -474,7 +471,13 @@ class Platform {
   static const macosIa32 = const Platform('macos-ia32');
   static const windowsIa32 = const Platform('windows-ia32');
 
-  static const values = const [];
+  static const values = const <Platform>[
+    androidArm,
+    linuxIa32,
+    linuxX64,
+    macosIa32,
+    windowsIa32
+  ];
 
   final String value;
   const Platform(this.value);
