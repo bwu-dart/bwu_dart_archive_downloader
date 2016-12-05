@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 
 final _log = new Logger(' bwu_dart_archive_downloader.test.dart_sdk_download');
 
-main() {
+void main() {
   group('download SDK', () {
     io.Directory tempDir;
 
@@ -58,7 +58,7 @@ main() {
       final version = await downloader.findVersion(
           channel, new Version.parse('1.2.0-edge.32698'));
       expect(version, isNotNull);
-      final uri = await channel.getUri(
+      final uri = channel.getUri(
           new SdkFile.dartSdk(
               Platform.getFromSystemPlatform(prefer64bit: true)),
           version: version);
@@ -76,7 +76,7 @@ main() {
       final version =
           await downloader.findVersion(channel, new Version.parse('1.2.0'));
       expect(version, isNotNull);
-      final uri = await channel.getUri(
+      final uri = channel.getUri(
           new SdkFile.dartSdk(
               Platform.getFromSystemPlatform(prefer64bit: true)),
           version: version);

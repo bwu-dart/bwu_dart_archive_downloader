@@ -10,20 +10,19 @@ import 'package:quiver_log/log.dart' show BASIC_LOG_FORMATTER, PrintAppender;
 import 'package:stack_trace/stack_trace.dart' show Chain;
 import 'package:unscripted/unscripted.dart';
 
-final _log = new Logger('bwu_dart_archive_downloader.src.cli');
+final Logger _log = new Logger('bwu_dart_archive_downloader.src.cli');
 
 void main(List<String> args) {
   Logger.root.level = Level.INFO;
-  var appender = new PrintAppender(BASIC_LOG_FORMATTER);
-  appender.attachLogger(Logger.root);
+  new PrintAppender(BASIC_LOG_FORMATTER)..attachLogger(Logger.root);
 
-  Chain.capture(() => _main(args), onError: (error, stack) {
-    _log.shout(error);
-    _log.shout(stack.terse);
+  Chain.capture/*<dynamic>*/(() => _main(args),
+      onError: (dynamic error, stack) {
+    _log..shout(error)..shout(stack.terse);
   });
 }
 
-_main([List<String> arguments]) =>
+dynamic _main([List<String> arguments]) =>
     new Script(DownloadCommandModel).execute(arguments);
 
 class DDownScriptModel extends Object with DownloadCommandModel {
@@ -39,26 +38,26 @@ class DownloadCommandModel {
       help: '''
 Download a file from the Dart archive (http://gsdview.appspot.com/dart-archive/channels/).
 Version and download channel can be selected.''')
-  down(
+  dynamic down(
       {@Option(
           help: '''
 The base name of the file to download excluding extensions like "-ia32", ".md5sum", ... .''',
           abbr: 'f') //
 //          defaultsTo: defaultStaticFilesSourceDirectory) //
-      String filename, //
+          String filename, //
       @Option(
           help: '''
 The absolute or relative path where the directory should be created.''',
           abbr: 'o',
           defaultsTo: '.') //
-      String outputDirectory,
+          String outputDirectory,
       //
       @Option(
           help: '''
 The version to download.''',
           abbr: 'v',
           defaultsTo: 'latest') //
-      String version,
+          String version,
       //
       @Option(
           help: '''
@@ -74,7 +73,7 @@ The channel to download from.
 ''', //
           abbr: 'c',
           defaultsTo: 'stable/release') //
-      String channel,
+          String channel,
       //
       @Option(
           help: '''
@@ -90,7 +89,7 @@ Choose a folder in the archive:
 ''',
           abbr: 'a',
           defaultsTo: 'sdk') //
-      String artifact,
+          String artifact,
       //
       @Option(
           help: '''
@@ -105,7 +104,7 @@ from the system.
 ''',
           abbr: 'p') //
 //          defaultsTo: 'current system') //
-      String platform,
+          String platform,
       @Option(
           help: '''
 Choose an addon-file instead of the main file.
@@ -115,7 +114,7 @@ Choose an addon-file instead of the main file.
 ''',
           abbr: 's',
           defaultsTo: '') //
-      String fileAddition,
+          String fileAddition,
       //
       @Flag(
           help: '''
@@ -124,39 +123,39 @@ If "platform" is omitted and derived from the system, should it download the
           abbr: 'b',
           defaultsTo: true,
           negatable: true) //
-      bool prefer64bit, //
+          bool prefer64bit, //
       @Flag(
           help: '''
 Get the debug build of the file.''',
 //          abbr: 'd',
           defaultsTo: false,
           negatable: true) //
-      bool debugBuild, //
+          bool debugBuild, //
       @Flag(
           help: '''
 Extract the downloaded ZIP archive file.''',
           abbr: 'e',
           defaultsTo: false,
           negatable: true) //
-      bool extract, //
+          bool extract, //
       @Option(
           help: '''
 Extracts the ZIP archive top-level directory into the the "extractAs" directory.''',
           abbr: 'd') //
 //          defaultsTo: '.') //
-      String extractAs, //
+          String extractAs, //
       @Option(
           help: '''
 Extracts the ZIP archive top-level directory into the the "extractAs" directory.''',
           abbr: 't',
           defaultsTo: '.') //
-      String extractTo, //
+          String extractTo, //
       @Flag(
           help: '''
 Verbose logging output.''',
           defaultsTo: false,
           negatable: true) //
-      bool verbose}) async {
+          bool verbose}) async {
     if (verbose) {
       Logger.root.level = Level.FINEST;
     }
@@ -168,7 +167,7 @@ Verbose logging output.''',
     final Iterable<DownloadChannel> channels =
         DownloadChannel.values.where((v) => v.value.startsWith(channel));
     if (channels.isEmpty) {
-      throw 'Channel "${channel}" isn\'t supported or recognized.';
+      throw new Exception('Channel "$channel" isn\'t supported or recognized.');
     } else {
       _log.fine('Using channel "${channels.first.value}".');
     }
@@ -181,7 +180,7 @@ Verbose logging output.''',
       try {
         parsedVersion = new Version.parse(version);
       } catch (e) {
-        throw 'Version "${version}" can\'t be parsed.';
+        throw new Exception('Version "$version" can\'t be parsed.');
       }
       versionDirectory =
           await downloader.findVersion(channels.first, parsedVersion);
@@ -190,7 +189,8 @@ Verbose logging output.''',
     final Iterable<DownloadArtifact> artifacts =
         DownloadArtifact.values.where((v) => v.value.startsWith(artifact));
     if (artifacts.isEmpty) {
-      throw 'Artifact "${artifact}" isn\'t supported or recognized.';
+      throw new Exception(
+          'Artifact "$artifact" isn\'t supported or recognized.');
     } else {
       _log.fine('Using artifact "${artifacts.first.value}".');
     }
@@ -198,7 +198,8 @@ Verbose logging output.''',
     final Iterable<FileAddition> fileAdditions =
         FileAddition.values.where((v) => v.value.startsWith(fileAddition));
     if (fileAdditions.isEmpty) {
-      throw 'FileAddition "${fileAddition}" isn\'t supported or recognized.';
+      throw new Exception(
+          'FileAddition "$fileAddition" isn\'t supported or recognized.');
     } else {
       _log.fine('Using file addition "${fileAdditions.first.value}".');
     }
@@ -207,9 +208,11 @@ Verbose logging output.''',
     if (platform == null || platform.isEmpty) {
       platforms = [Platform.getFromSystemPlatform(prefer64bit: prefer64bit)];
     } else {
-      platforms = Platform.values.where((v) => v.value.startsWith(platform));
+      platforms =
+          Platform.values.where((Platform v) => v.value.startsWith(platform));
       if (platforms.isEmpty) {
-        throw 'Platform "${platform}" isn\'t supported or recognized.';
+        throw new Exception(
+            'Platform "$platform" isn\'t supported or recognized.');
       } else {
         _log.fine('Using platform "${platforms.first.value}".');
       }
@@ -220,45 +223,43 @@ Verbose logging output.''',
       case DownloadArtifact.apiDocs:
         downloadFile = ApiDocsFile.dartApiDocsZip;
         if (filename != null) {
-          _log.fine('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("$filename").');
         }
         break;
       case DownloadArtifact.dartium:
         final fileConstructors =
             DartiumFile.values.keys.where((v) => v.startsWith(filename));
         if (fileConstructors.isEmpty) {
-          throw 'File "${filename}" isn\'t supported or recognized.';
+          throw new Exception(
+              'File "$filename" isn\'t supported or recognized.');
         } else {
           _log.fine('Using download file "${fileConstructors.first}".');
         }
         downloadFile = DartiumFile.values[fileConstructors.first](
             platforms.first,
             debug: debugBuild,
-            fileAddition: fileAdditions.first);
+            fileAddition: fileAdditions.first) as DownloadFile;
         break;
       case DownloadArtifact.dartiumAndroid:
         downloadFile = DartiumAndroidFile.contentShell;
         if (filename != null) {
-          _log.fine('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("$filename").');
         }
         break;
       case DownloadArtifact.eclipseUpdate:
-        throw 'Download Eclipse updates isn\'t yet implemented.';
-        break;
-      case DownloadArtifact.editor:
-        throw 'Download DartEditor isn\'t yet implemented.';
+        throw new Exception('Download Eclipse updates isn\'t yet implemented.');
         break;
       case DownloadArtifact.sdk:
         downloadFile = new SdkFile.dartSdk(platforms.first,
             debug: debugBuild, fileAddition: fileAdditions.first);
         if (filename != null) {
-          _log.fine('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("$filename").');
         }
         break;
       case DownloadArtifact.version:
         downloadFile = VersionFile.version;
         if (filename != null) {
-          _log.fine('Ignoring parameter filename ("${filename}").');
+          _log.fine('Ignoring parameter filename ("$filename").');
         }
         break;
       default:
@@ -267,9 +268,9 @@ Verbose logging output.''',
     }
 
     final uri = channels.first.getUri(downloadFile, version: versionDirectory);
-    io.File archiveFile = await downloader.downloadFile(uri);
+    final archiveFile = await downloader.downloadFile(uri);
     if (extract) {
-      installArchive(archiveFile, new io.Directory(extractTo),
+      await installArchive(archiveFile, new io.Directory(extractTo),
           replaceRootDirectoryName:
               extractAs != null && extractAs.isNotEmpty ? extractAs : null);
     }

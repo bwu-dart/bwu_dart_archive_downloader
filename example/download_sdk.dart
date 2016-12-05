@@ -4,7 +4,7 @@ import 'dart:io' as io;
 
 import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
 
-main() async {
+dynamic main() async {
   // create an instance of the downloader and specify the download directory.
   final downloader = new DartArchiveDownloader(new io.Directory('temp'));
 

@@ -7,7 +7,7 @@ import 'package:path/path.dart' as path;
 
 export 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart' hide main;
 
-main(List<String> args) {
+void main(List<String> args) {
   tasks.getSubProjects = getSubProjectsImpl;
   tasks.main(args);
 }
@@ -15,7 +15,8 @@ main(List<String> args) {
 // Like default but excludes `temp` directory
 List<io.Directory> getSubProjectsImpl() => io.Directory.current
     .listSync(recursive: true)
-    .where((d) => d.path.endsWith('pubspec.yaml') &&
+    .where((d) =>
+        d.path.endsWith('pubspec.yaml') &&
         !d.absolute.path.startsWith(
             path.join(io.Directory.current.absolute.path, 'temp')) &&
         d.parent.absolute.path != io.Directory.current.absolute.path)

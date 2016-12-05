@@ -1,6 +1,6 @@
 library bwu_dart_archive_downloader.src.dart_archive_downloader;
 
-import 'dart:async' show Future, Stream;
+import 'dart:async' show Future;
 import 'dart:convert' show JSON;
 import 'dart:io' as io;
 
@@ -8,10 +8,11 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart' show Logger;
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:quiver/core.dart' show hash3;
 
-const baseUri = 'http://gsdview.appspot.com/dart-archive/channels/';
-const apiAuthority = 'www.googleapis.com';
-const apiPath = '/storage/v1/b/dart-archive/o';
+const String baseUri = 'http://gsdview.appspot.com/dart-archive/channels/';
+const String apiAuthority = 'www.googleapis.com';
+const String apiPath = '/storage/v1/b/dart-archive/o';
 
 final _log =
     new Logger('bwu_dart_archive_downloader.src.dart_archive_downloader');
@@ -19,31 +20,43 @@ final _log =
 /// Contains the information gathered from the `VERSION` file in the download
 /// directory.
 class VersionInfo {
-  String revision;
-  String version;
-  DateTime date;
+  final String revision;
+  final String version;
+  final DateTime date;
 
-  VersionInfo({this.revision: '', this.version: '', this.date}) {
-    if (date == null) date = new DateTime(0);
-  }
+  VersionInfo({this.revision: '', this.version: '', DateTime date})
+      : this.date = date ?? new DateTime(0);
 
-  VersionInfo.fromJson(Map json) {
-    revision = json['revision'];
-    version = json['version'];
+  factory VersionInfo.fromJson(Map json) {
+    final revision = json['revision'] as String;
+    final version = json['version'] as String;
     final d = json['date'] as String;
     final year = int.parse(d.substring(0, 4));
     final month = int.parse(d.substring(5, 7));
     final day = int.parse(d.substring(8, 10));
 //    final hour = int.parse(d.substring(8, 10)); // removed at 2015-05-30
 //    final minute = int.parse(d.substring(10, 12));
-    date = new DateTime(year, month, day /*, hour, minute*/);
+    final date = new DateTime(year, month, day /*, hour, minute*/);
+    return new VersionInfo(revision: revision, version: version, date: date);
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'revision': revision,
+      'version': version,
+      'date': date.toIso8601String(),
+    };
   }
 
   Version get semanticVersion {
     return new Version.parse(version);
   }
 
-  bool operator >(other) {
+  VersionInfo withoutRevision() {
+    return new VersionInfo(revision: null, version: version, date: date);
+  }
+
+  bool operator >(dynamic other) {
     if (other == null || other is! VersionInfo) {
       return true;
     }
@@ -51,7 +64,7 @@ class VersionInfo {
     return revision.compareTo((other as VersionInfo).revision) > 0;
   }
 
-  bool operator <(other) {
+  bool operator <(dynamic other) {
     if (other == null || other is! VersionInfo) {
       return false;
     }
@@ -59,16 +72,18 @@ class VersionInfo {
     return revision.compareTo((other as VersionInfo).revision) < 0;
   }
 
-  bool operator ==(other) {
-    if (other == null || other is! VersionInfo) {
-      return false;
-    }
-    return revision == (other as VersionInfo).revision;
+  @override
+  bool operator ==(dynamic other) {
+    return other is VersionInfo && revision == other.revision;
   }
 
-  bool operator <=(other) => this < other || this == other;
+  int _hashCode;
+  @override
+  int get hashCode => _hashCode ??= hash3(revision, version, date);
 
-  bool operator >=(other) => this > other || this == other;
+  bool operator <=(dynamic other) => this < other || this == other;
+
+  bool operator >=(dynamic other) => this > other || this == other;
 }
 
 /// Downloads an artifact from the Dart archive site.
@@ -92,10 +107,11 @@ class DartArchiveDownloader {
     }
   }
 
-  /// Downloads the file [uri] points to to [downloadDestination].
+  /// Downloads the file [uri] points to to [_downloadDirectory].
   /// Returns a [io.File] referencing the downloaded file.
   Future<io.File> downloadFile(Uri uri) async {
     // head request not supported by the pate (for progress information)
+    print('downloadFile: $uri');
     final request = new http.Request('GET', uri);
     if (_downloadFile == null) {
       _downloadFile = new io.File(
@@ -105,12 +121,13 @@ class DartArchiveDownloader {
 
     final http.StreamedResponse response = await request.send();
     if (response.statusCode != 200) {
-      throw 'Response: ${response.statusCode} - ${response.reasonPhrase}';
+      throw new Exception(
+          'Response: ${response.statusCode} - ${response.reasonPhrase}');
     }
     final downloadFileSink = _downloadFile.openWrite();
     int bytesCount = 0;
     int charsCount = 0;
-    final subscription = response.stream.listen((data) {
+    await response.stream.forEach((data) {
       bytesCount += data.length;
       downloadFileSink.add(data);
       if (bytesCount ~/ 1000000 == 0) {
@@ -122,7 +139,6 @@ class DartArchiveDownloader {
         }
       }
     });
-    await subscription.asFuture();
     //io.stdout.writeln();
     await downloadFileSink.flush();
     await downloadFileSink.close();
@@ -157,8 +173,11 @@ class DartArchiveDownloader {
     }
     String token;
     bool hasMorePages = true;
-    Map query = {'prefix': 'channels/${channel.value}', 'delimiter': '/'};
-    List<String> versions = <String>[];
+    final query = <String, String>{
+      'prefix': 'channels/${channel.value}',
+      'delimiter': '/'
+    };
+    final versions = <String>[];
     _log.fine('Fetch versions from ${channel.value}.');
     int currentPage = 1;
 
@@ -168,21 +187,23 @@ class DartArchiveDownloader {
       } else {
         query.remove('pageToken');
       }
-      Uri uri = new Uri.https(apiAuthority, apiPath, query);
+      final uri = new Uri.https(apiAuthority, apiPath, query);
       _log.fine('  page: ${currentPage++}');
-      final response = JSON.decode((await http.get(uri)).body);
-      token = response['nextPageToken'];
+      final Map<String, dynamic> response =
+          JSON.decode((await http.get(uri)).body) as Map<String, dynamic>;
+      token = response['nextPageToken'] as String;
       if (token == null || token.isEmpty) {
         hasMorePages = false;
       }
-      versions.addAll(response['prefixes']
+      versions.addAll((response['prefixes'] as List<String>)
           .map((e) => e.split('/').where((e) => e != null && e.isNotEmpty).last)
           .where(_isNotWeirdOrInvalidVersion));
 //      _log.fine('${token}, ${response['prefixes'].first}');
     }
 
-    versions.sort((k, v) => _descendingVersionComparer(k, v) * -1);
-    versions.insert(0, 'latest');
+    versions
+      ..sort((k, v) => _descendingVersionComparer(k, v) * -1)
+      ..insert(0, 'latest');
     _versions[channel] = versions;
     return versions;
   }
@@ -191,7 +212,13 @@ class DartArchiveDownloader {
     return version.isNotEmpty &&
         !weirdBuildNumberRegExp.hasMatch(
             version) /* ignore a few versions where Dartium was stored in another folder with suffix '.0' */ &&
-        !['raw', 'be', '42', 'channels', 'latest',].contains(version.trim());
+        ![
+          'raw',
+          'be',
+          '42',
+          'channels',
+          'latest',
+        ].contains(version.trim());
   }
 
   /// Tries to find the directory name containing the requested version.
@@ -212,7 +239,7 @@ class DartArchiveDownloader {
     if (start == end) {
       final VersionInfo versionInfo =
           await _getVersionInfo(channel, versions[start]);
-      _log.fine('check pos ${start}: ${versionInfo.semanticVersion}');
+      _log.fine('check pos $start: ${versionInfo.semanticVersion}');
       return versions[start];
     }
     int mid = start + ((end - start) ~/ 2);
@@ -225,7 +252,7 @@ class DartArchiveDownloader {
       }
     }
     // _log.fine('start: ${start} - end: ${end} - mid: ${mid} - version: ${versionInfo.semanticVersion}');
-    _log.fine('check pos ${mid}: ${versionInfo.semanticVersion}');
+    _log.fine('check pos $mid: ${versionInfo.semanticVersion}');
 
     if (semanticVersion == versionInfo.semanticVersion) {
       return versions[mid];
@@ -240,13 +267,14 @@ class DartArchiveDownloader {
       DownloadChannel channel, String version) async {
     final content = await downloadContent(
         channel.getUri(VersionFile.version, version: version));
-    return new VersionInfo.fromJson(JSON.decode(content));
+    return new VersionInfo.fromJson(
+        JSON.decode(content) as Map<String, dynamic>);
   }
 }
 
 int _descendingVersionComparer(String x, String y) {
-  bool xIsSemVer = semVerRegExp.hasMatch(x);
-  bool yIsSemVer = semVerRegExp.hasMatch(y);
+  final xIsSemVer = semVerRegExp.hasMatch(x);
+  final yIsSemVer = semVerRegExp.hasMatch(y);
   // sort semantic version values higher than build numbers
   // because newer builds are provided with semantic versions
   if (xIsSemVer && yIsSemVer) {
@@ -259,22 +287,25 @@ int _descendingVersionComparer(String x, String y) {
   return x.padLeft(8).compareTo(y.padLeft(8));
 }
 
-final semVerRegExp = new RegExp(r'^[0-9]+\.[0-9]+\.[0-9]+{?:[+-].*$');
-final weirdBuildNumberRegExp = new RegExp(r'^[0-9]+\.0$');
+final RegExp semVerRegExp = new RegExp(r'^[0-9]+\.[0-9]+\.[0-9]+([+-].*|)$');
+final RegExp weirdBuildNumberRegExp = new RegExp(r'^[0-9]+\.0$');
 
 /// Build the Uri for a download file based on [DownloadChannel],
 /// [DownloadFile], and version info.
 class DownloadChannel {
-  static const stableRaw = const DownloadChannel('stable/raw/');
-  static const stableRelease = const DownloadChannel('stable/release/');
-  static const stableSigned = const DownloadChannel('stable/signed/');
-  static const devRaw = const DownloadChannel('dev/raw/');
-  static const devRelease = const DownloadChannel('dev/release/');
-  static const devSigned = const DownloadChannel('dev/signed/');
-  static const beRaw = const DownloadChannel('be/raw/');
+  static const DownloadChannel stableRaw = const DownloadChannel('stable/raw/');
+  static const DownloadChannel stableRelease =
+      const DownloadChannel('stable/release/');
+  static const DownloadChannel stableSigned =
+      const DownloadChannel('stable/signed/');
+  static const DownloadChannel devRaw = const DownloadChannel('dev/raw/');
+  static const DownloadChannel devRelease =
+      const DownloadChannel('dev/release/');
+  static const DownloadChannel devSigned = const DownloadChannel('dev/signed/');
+  static const DownloadChannel beRaw = const DownloadChannel('be/raw/');
 
   final String value;
-  static const values = const [
+  static const List<DownloadChannel> values = const <DownloadChannel>[
     stableRaw,
     stableRelease,
     stableSigned,
@@ -286,12 +317,12 @@ class DownloadChannel {
 
   /// Builds an Uri for an [DownloadArtifact].
   /// [version] is the directory name containing the download file. If you want
-  /// to use a Dart release version, use [findVersion] the get the directory
+  /// to use a Dart release version, use [DartArchiveDownloader.findVersion] the get the directory
   /// form the Dart release version.
   Uri getUri(DownloadFile file, {String version: 'latest'}) {
-    if (version == null) version = 'latest';
+    version ??= 'latest';
     return Uri.parse(
-        '${baseUri}${value}${version != null ? version : 'latest' }/${file.artifact.value}${file.value}');
+        '$baseUri$value${version != null ? version : 'latest' }/${file.artifact.value}${file.value}');
   }
 
   const DownloadChannel(this.value);
@@ -299,23 +330,23 @@ class DownloadChannel {
 
 /// A list of artifacts to download.
 class DownloadArtifact {
-  static const apiDocs = const DownloadArtifact('api-docs/', ApiDocsFile);
-  static const dartium = const DownloadArtifact('dartium/', DartiumFile);
-  static const dartiumAndroid =
+  static const DownloadArtifact apiDocs =
+      const DownloadArtifact('api-docs/', ApiDocsFile);
+  static const DownloadArtifact dartium =
+      const DownloadArtifact('dartium/', DartiumFile);
+  static const DownloadArtifact dartiumAndroid =
       const DownloadArtifact('dartium_android/', DartiumAndroidFile);
-  static const eclipseUpdate =
+  static const DownloadArtifact eclipseUpdate =
       const DownloadArtifact('editor-eclipse-update/', EditorEclipseUpdateFile);
-  @deprecated
-  static const editor = const DownloadArtifact('editor/', EditorFile);
-  static const sdk = const DownloadArtifact('sdk/', SdkFile);
-  static const version = const DownloadArtifact('', VersionFile);
+  static const DownloadArtifact sdk = const DownloadArtifact('sdk/', SdkFile);
+  static const DownloadArtifact version =
+      const DownloadArtifact('', VersionFile);
 
-  static const values = const [
+  static const List<DownloadArtifact> values = const <DownloadArtifact>[
     apiDocs,
     dartium,
     dartiumAndroid,
     eclipseUpdate,
-    editor,
     sdk,
     version
   ];
@@ -334,7 +365,7 @@ abstract class DownloadFile {
 
 /// To build a file name for downloading a `VERSION` file.
 class VersionFile extends DownloadFile {
-  static const version = const VersionFile('VERSION');
+  static const VersionFile version = const VersionFile('VERSION');
 
   @override
   DownloadArtifact get artifact => DownloadArtifact.version;
@@ -344,7 +375,8 @@ class VersionFile extends DownloadFile {
 
 /// To build a file name for downloading an API-Docs file.
 class ApiDocsFile extends DownloadFile {
-  static const dartApiDocsZip = const ApiDocsFile('dart-api-docs.zip');
+  static const ApiDocsFile dartApiDocsZip =
+      const ApiDocsFile('dart-api-docs.zip');
 
   @override
   DownloadArtifact get artifact => DownloadArtifact.apiDocs;
@@ -360,10 +392,12 @@ class ApiDocsFile extends DownloadFile {
 /// [fileAddition] so select file add-ons like MD5 or SHA checksum files
 String buildFilename(String filenameBase, Platform platform,
         {bool debug: false, FileAddition fileAddition: FileAddition.none}) =>
-    '${filenameBase}-${platform.value}-${debug ? 'debug' : 'release'}.zip${fileAddition.value}';
+    '$filenameBase-${platform.value}-${debug ? 'debug' : 'release'}.zip${fileAddition.value}';
 
 /// To build a file name for downloading Dartium.
 class DartiumFile extends DownloadFile {
+  DartiumFile(String value) : super(value);
+
   factory DartiumFile.chromedriverZip(Platform platform,
           {bool debug: false, FileAddition fileAddition: FileAddition.none}) =>
       new DartiumFile(buildFilename('chromedriver', platform,
@@ -377,7 +411,7 @@ class DartiumFile extends DownloadFile {
       new DartiumFile(buildFilename('dartium', platform,
           debug: debug, fileAddition: fileAddition));
 
-  static final values = {
+  static final Map<String, Function> values = {
     'chromedriver': (Platform platform,
             {bool debug: false,
             FileAddition fileAddition: FileAddition.none}) =>
@@ -396,13 +430,11 @@ class DartiumFile extends DownloadFile {
   };
   @override
   DownloadArtifact get artifact => DownloadArtifact.dartium;
-
-  DartiumFile(String value) : super(value);
 }
 
 /// To build a file name for downloading Dartium for Android.
 class DartiumAndroidFile extends DownloadFile {
-  static const contentShell =
+  static const DartiumAndroidFile contentShell =
       const DartiumAndroidFile('content_shell-android-arm-release.apk');
 
   @override
@@ -414,23 +446,13 @@ class DartiumAndroidFile extends DownloadFile {
 /// To build a file name for downloading Eclipse plugin updates.
 // TODO(zoechi) not yet supported
 class EditorEclipseUpdateFile extends DownloadFile {
-  static const contentShell = const EditorEclipseUpdateFile('');
+  static const EditorEclipseUpdateFile contentShell =
+      const EditorEclipseUpdateFile('');
 
   @override
   DownloadArtifact get artifact => DownloadArtifact.eclipseUpdate;
 
   const EditorEclipseUpdateFile(String value) : super(value);
-}
-
-/// To build a file name for downloading Eclipse plugin updates.
-// TODO(zoechi) not yet supported
-class EditorFile extends DownloadFile {
-  static const contentShell = const EditorFile('');
-
-  @override
-  DownloadArtifact get artifact => DownloadArtifact.editor;
-
-  const EditorFile(String value) : super(value);
 }
 
 /// To build a file name for downloading the Dart SDK.
@@ -447,7 +469,7 @@ class SdkFile extends DownloadFile {
 }
 
 /// List of provided platforms (operating system and processor architecture)
-/// If there is a distinction between ia32 or x64 for one platform [prefer64bit]
+/// If there is a distinction between ia32 or x64 for one platform `prefer64bit`
 /// decides which one to choose.
 class Platform {
   static Platform getFromSystemPlatform({bool prefer64bit: true}) {
@@ -468,13 +490,19 @@ class Platform {
     return null;
   }
 
-  static const androidArm = const Platform('android-arm');
-  static const linuxIa32 = const Platform('linux-ia32');
-  static const linuxX64 = const Platform('linux-x64');
-  static const macosIa32 = const Platform('macos-ia32');
-  static const windowsIa32 = const Platform('windows-ia32');
+  static const Platform androidArm = const Platform('android-arm');
+  static const Platform linuxIa32 = const Platform('linux-ia32');
+  static const Platform linuxX64 = const Platform('linux-x64');
+  static const Platform macosIa32 = const Platform('macos-ia32');
+  static const Platform windowsIa32 = const Platform('windows-ia32');
 
-  static const values = const [];
+  static const List<Platform> values = const <Platform>[
+    androidArm,
+    linuxIa32,
+    linuxX64,
+    macosIa32,
+    windowsIa32
+  ];
 
   final String value;
   const Platform(this.value);
@@ -482,11 +510,15 @@ class Platform {
 
 /// List of provided add-on files
 class FileAddition {
-  static const none = const FileAddition('');
-  static const md5sum = const FileAddition('.md5sum');
-  static const sha256sum = const FileAddition('.sha256sum');
+  static const FileAddition none = const FileAddition('');
+  static const FileAddition md5sum = const FileAddition('.md5sum');
+  static const FileAddition sha256sum = const FileAddition('.sha256sum');
 
-  static const values = const [none, md5sum, sha256sum];
+  static const List<FileAddition> values = const <FileAddition>[
+    none,
+    md5sum,
+    sha256sum
+  ];
 
   final String value;
   const FileAddition(this.value);

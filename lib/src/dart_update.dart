@@ -1,6 +1,6 @@
 library bwu_dart_archive_downloader.src.dart_update;
 
-import 'dart:async' show Future, Stream;
+import 'dart:async' show Future;
 import 'dart:convert' show JSON;
 import 'dart:io' as io;
 
@@ -69,49 +69,59 @@ class DartUpdate {
   /// Execute the update.
   Future update() async {
     final currentVersion = getCurrentVersionInfo();
-    final latestVersion = await downloadLatestVersionInfo()..revision = null;
-    //if(latestVersion > currentVersion) {
-    backup(currentVersion);
+    print('Current version: "${currentVersion.toJson()}"');
+    final latestVersion = (await downloadLatestVersionInfo());
+    if (latestVersion <= currentVersion) {
+      print('No newer version found.');
+    } else {
+      backup(currentVersion);
 
-    final pendingDownloads = [];
-    pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.sdk,
-            new SdkFile.dartSdk(_options.targetPlatform))
-        .then((f) => installArchive(f, _options.installDirectory)));
+      versionFile().writeAsStringSync(JSON.encode(latestVersion.toJson()));
+      print(
+          'write version file: ${versionFile().path}, ${latestVersion.toJson()}');
 
-    pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.dartiumZip(_options.targetPlatform)).then((f) =>
-        installArchive(f, _options.installDirectory,
-            replaceRootDirectoryName: 'dartium')));
+      final useLatestVersion = latestVersion.withoutRevision();
+      final pendingDownloads = <Future<io.File>>[
+        downloadFile(useLatestVersion, DownloadArtifact.sdk,
+                new SdkFile.dartSdk(_options.targetPlatform))
+            .then/*<io.File>*/(
+                (f) => installArchive(f, _options.installDirectory)),
+        downloadFile(useLatestVersion, DownloadArtifact.dartium,
+                new DartiumFile.dartiumZip(_options.targetPlatform))
+            .then/*<io.File>*/((f) => installArchive(
+                f, _options.installDirectory,
+                replaceRootDirectoryName: 'dartium')),
+        downloadFile(useLatestVersion, DownloadArtifact.dartium,
+                new DartiumFile.contentShellZip(_options.targetPlatform))
+            .then/*<io.File>*/((f) => installArchive(
+                f, _options.installDirectory,
+                replaceRootDirectoryName: 'content_shell')),
+        downloadFile(useLatestVersion, DownloadArtifact.dartium,
+                new DartiumFile.chromedriverZip(_options.targetPlatform))
+            .then/*<io.File>*/((f) => installArchive(
+                f, _options.installDirectory,
+                replaceRootDirectoryName: 'chromedriver'))
+      ];
 
-    pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.contentShellZip(_options.targetPlatform)).then((f) =>
-        installArchive(f, _options.installDirectory,
-            replaceRootDirectoryName: 'content_shell')));
+      final List<io.File> files = await Future.wait(pendingDownloads);
+      files.where((f) => f != null).forEach((f) => print(f.path));
 
-    pendingDownloads.add(downloadFile(latestVersion, DownloadArtifact.dartium,
-        new DartiumFile.chromedriverZip(_options.targetPlatform)).then((f) =>
-        installArchive(f, _options.installDirectory,
-            replaceRootDirectoryName: 'chromedriver')));
-
-    final List<io.File> files = await Future.wait(pendingDownloads);
-    files.where((f) => f != null).forEach((f) => print(f.path));
-
-    await Future.wait(pendingDownloads);
-    _log.info('Downloads finished');
-    //}
+      await Future.wait(pendingDownloads);
+      _log.info('Downloads finished');
+    }
   }
 
-  /// Load the `VERSION` file from the currently installed SDK
-  io.File versionFile(String suffix) => new io.File(path.join(
-      _options.downloadDirectory.path,
-      '${DownloadArtifact.version.value}_${_options.targetPlatform.value}_VERSION_${suffix}.json'));
+  io.File versionFile() =>
+      new io.File(path.join(_options.installDirectory.path, 'VERSION.json'));
 
+  /// Load the `VERSION` file from the currently installed SDK
   VersionInfo getCurrentVersionInfo() {
-    final currentVersionFile = versionFile('current');
+    final currentVersionFile = versionFile();
     if (currentVersionFile.existsSync()) {
       try {
         return new VersionInfo.fromJson(
-            JSON.decode(currentVersionFile.readAsStringSync()));
+            JSON.decode(currentVersionFile.readAsStringSync())
+                as Map<String, dynamic>);
       } catch (_) {}
     }
     return new VersionInfo();
@@ -122,11 +132,11 @@ class DartUpdate {
   Future<VersionInfo> downloadLatestVersionInfo() async {
     final downloader = new DartArchiveDownloader(_options.downloadDirectory);
 
-    io.File newVersionFile = await downloader
+    final newVersionDownloadFile = await downloader
         .downloadFile(_options.channel.getUri(VersionFile.version));
-    newVersionFile = newVersionFile.renameSync(versionFile('new').path);
     return new VersionInfo.fromJson(
-        JSON.decode(newVersionFile.readAsStringSync()));
+        JSON.decode(newVersionDownloadFile.readAsStringSync())
+            as Map<String, dynamic>);
   }
 
   /// Execute the download of the SDK.
@@ -154,10 +164,10 @@ class DartUpdate {
       return;
     }
     final dateString = new DateTime.now().toIso8601String().replaceAll(':', '');
-    var currentVersionName = currentVersion != null &&
-            currentVersion.revision != null
-        ? '${currentVersion.revision}_${dateString}'
-        : dateString;
+    final currentVersionName =
+        currentVersion != null && currentVersion.revision != null
+            ? '${currentVersion.revision}_$dateString'
+            : dateString;
     backupDirectory = new io.Directory(
         path.join(_options.backupDirectory.path, currentVersionName));
 
@@ -172,7 +182,7 @@ class DartUpdate {
 
 /// Get the root directory of the Zip [archive] files content.
 String getZipRootDirectory(io.File archive) {
-  List<int> bytes = archive.readAsBytesSync();
+  final bytes = archive.readAsBytesSync();
   final files = new ZipDecoder().decodeBytes(bytes);
   return files.first.name;
 }
@@ -189,7 +199,7 @@ Future installArchive(io.File archive, io.Directory installDirectory,
   process.stderr.listen(io.stderr.add);
   await process.exitCode;
   if (replaceRootDirectoryName != null) {
-    new io.Directory(
+    await new io.Directory(
             path.join(installDirectory.path, getZipRootDirectory(archive)))
         .rename(path.join(installDirectory.path, replaceRootDirectoryName));
   }
