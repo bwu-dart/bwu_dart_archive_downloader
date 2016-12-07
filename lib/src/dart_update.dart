@@ -4,8 +4,19 @@ import 'dart:async' show Future;
 import 'dart:convert' show JSON;
 import 'dart:io' as io;
 
-import 'package:archive/archive.dart';
-import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart';
+import 'package:archive/archive.dart' show ZipDecoder;
+import 'package:bwu_dart_archive_downloader/bwu_dart_archive_downloader.dart'
+    show
+        DartArchiveDownloader,
+        DartiumFile,
+        DownloadArtifact,
+        DownloadChannel,
+        DownloadFile,
+        Platform,
+        SdkFile,
+        VersionFile;
+import 'package:bwu_dart_archive_downloader/src/version_info.dart'
+    show VersionInfo;
 import 'package:logging/logging.dart' show Logger;
 import 'package:path/path.dart' as path;
 
@@ -71,6 +82,7 @@ class DartUpdate {
     final currentVersion = getCurrentVersionInfo();
     print('Current version: "${currentVersion.toJson()}"');
     final latestVersion = (await downloadLatestVersionInfo());
+    print('Latest version: "${currentVersion.toJson()}"');
     if (latestVersion <= currentVersion) {
       print('No newer version found.');
     } else {
