@@ -51,12 +51,14 @@ void main() {
 //        skip: 'just for manual testing',
         timeout: const Timeout(const Duration(seconds: 500)));
 
-    test('download version be/raw/ Version 1.2.0-edge.32698', () async {
+    test('download version be/raw/ Version 1.21.0-edge', () async {
       final channel = DownloadChannel.beRaw;
       final downloader =
           new DartArchiveDownloader(new io.Directory('temp/install'));
       final version = await downloader.findVersion(
-          channel, new Version.parse('1.2.0-edge.32698'));
+          channel,
+          new Version.parse(
+              '1.21.0-edge.bb92055c477f8ddcf4b6be07eef6f3d6d9c0ac03'));
       expect(version, isNotNull);
       final uri = channel.getUri(
           new SdkFile.dartSdk(
@@ -69,12 +71,12 @@ void main() {
 //        skip: 'just for manual testing',
         timeout: const Timeout(const Duration(seconds: 500)));
 
-    test('download version stable/release/ Version 1.2.0', () async {
+    test('download version stable/release/ Version 1.21.0', () async {
       final channel = DownloadChannel.stableRelease;
       final downloader =
           new DartArchiveDownloader(new io.Directory('temp/install'));
       final version =
-          await downloader.findVersion(channel, new Version.parse('1.2.0'));
+          await downloader.findVersion(channel, new Version.parse('1.21.0'));
       expect(version, isNotNull);
       final uri = channel.getUri(
           new SdkFile.dartSdk(
